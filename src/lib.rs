@@ -2,6 +2,8 @@
 
 use core::fmt;
 
+pub mod rtu;
+
 /// A Modbus function code is represented by an unsigned 8 bit integer.
 pub(crate) type FunctionCode = u8;
 
