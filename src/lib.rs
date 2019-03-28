@@ -3,6 +3,9 @@
 /// A Modbus function code is represented by an unsigned 8 bit integer.
 pub(crate) type FunctionCode = u8;
 
+/// A Modbus sub-function code is represented by an unsigned 16 bit integer.
+pub(crate) type SubFunctionCode = u16;
+
 /// A Modbus address is represented by 16 bit (from `0` to `65535`).
 pub(crate) type Address = u16;
 
@@ -30,8 +33,34 @@ pub enum Request<'r> {
     WriteSingleRegister(Address, Word),
     WriteMultipleRegisters(Address, &'r [Word]),
     ReadWriteMultipleRegisters(Address, Quantity, Address, &'r [Word]),
+    #[cfg(feature = "rtu")]
+    ReadExceptionStatus,
+    #[cfg(feature = "rtu")]
+    Diagnostics(SubFunctionCode, &'r [Word]),
+    #[cfg(feature = "rtu")]
+    GetCommEventCounter,
+    #[cfg(feature = "rtu")]
+    GetCommEventLog,
+    #[cfg(feature = "rtu")]
+    ReportServerId,
+    //TODO:
+    //- ReadFileRecord
+    //- WriteFileRecord
+    //- MaskWriteRegiger
+    //TODO:
+    //- Read FifoQueue
+    //- EncapsulatedInterfaceTransport
+    //- CanOpenGeneralReferenceRequestAndResponsePdu
+    //- ReadDeviceIdentification
     Custom(FunctionCode, &'r [u8]),
 }
+
+#[cfg(feature = "rtu")]
+type Status = u16;
+#[cfg(feature = "rtu")]
+type EventCount = u16;
+#[cfg(feature = "rtu")]
+type MessageCount = u16;
 
 /// The response data of a successfull request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,6 +74,25 @@ pub enum Response<'r> {
     WriteSingleRegister(Address, Word),
     WriteMultipleRegisters(Address, Quantity),
     ReadWriteMultipleRegisters(&'r [Word]),
+    #[cfg(feature = "rtu")]
+    ReadExceptionStatus(u8),
+    #[cfg(feature = "rtu")]
+    Diagnostics(&'r [Word]),
+    #[cfg(feature = "rtu")]
+    GetCommEventCounter(Status, EventCount),
+    #[cfg(feature = "rtu")]
+    GetCommEventLog(Status, EventCount, MessageCount, &'r [u8]),
+    #[cfg(feature = "rtu")]
+    ReportServerId(&'r [u8], bool),
+    //TODO:
+    //- ReadFileRecord
+    //- WriteFileRecord
+    //- MaskWriteRegiger
+    //TODO:
+    //- Read FifoQueue
+    //- EncapsulatedInterfaceTransport
+    //- CanOpenGeneralReferenceRequestAndResponsePdu
+    //- ReadDeviceIdentification
     Custom(FunctionCode, &'r [u8]),
 }
 

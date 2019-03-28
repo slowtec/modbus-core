@@ -9,4 +9,7 @@ homepage = "https://github.com/slowtec/tokio-modbus"
 repository = "https://github.com/slowtec/tokio-modbus"
 edition = "2018"
 
-[dependencies]
+[features]
+default = ["tcp", "rtu"]
+tcp = []
+rtu = []
