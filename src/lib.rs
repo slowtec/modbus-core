@@ -1,5 +1,7 @@
 #![no_std]
 
+use core::fmt;
+
 /// A Modbus function code is represented by an unsigned 8 bit integer.
 pub(crate) type FunctionCode = u8;
 
@@ -108,4 +110,23 @@ pub enum Exception {
     MemoryParityError = 0x08,
     GatewayPathUnavailable = 0x0A,
     GatewayTargetDevice = 0x0B,
+}
+
+impl fmt::Display for Exception {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Exception::*;
+
+        let desc = match *self {
+            IllegalFunction => "Illegal function",
+            IllegalDataAddress => "Illegal data address",
+            IllegalDataValue => "Illegal data value",
+            ServerDeviceFailure => "Server device failure",
+            Acknowledge => "Acknowledge",
+            ServerDeviceBusy => "Server device busy",
+            MemoryParityError => "Memory parity error",
+            GatewayPathUnavailable => "Gateway path unavailable",
+            GatewayTargetDevice => "Gateway target device failed to respond",
+        };
+        write!(f, "{}", desc)
+    }
 }
