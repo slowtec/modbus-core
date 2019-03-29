@@ -2,7 +2,11 @@
 
 use core::fmt;
 
+mod error;
 pub mod rtu;
+pub mod util;
+
+pub use error::*;
 
 /// A Modbus function code.
 ///
