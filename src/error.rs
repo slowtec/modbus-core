@@ -5,4 +5,6 @@ pub enum Error {
     CoilValue,
     /// Invalid buffer size
     BufferSize,
+    /// Invalid function code
+    FnCode,
 }
