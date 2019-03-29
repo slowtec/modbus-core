@@ -4,11 +4,102 @@ use core::fmt;
 
 pub mod rtu;
 
-/// A Modbus function code is represented by an unsigned 8 bit integer.
-pub(crate) type FunctionCode = u8;
+/// A Modbus function code.
+///
+/// It is represented by an unsigned 8 bit integer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FnCode {
+    ReadCoils,
+    ReadDiscreteInputs,
+    WriteSingleCoil,
+    WriteMultipleCoils,
+    ReadInputRegisters,
+    ReadHoldingRegisters,
+    WriteSingleRegister,
+    WriteMultipleRegisters,
+    ReadWriteMultipleRegisters,
+    #[cfg(feature = "rtu")]
+    ReadExceptionStatus,
+    #[cfg(feature = "rtu")]
+    Diagnostics,
+    #[cfg(feature = "rtu")]
+    GetCommEventCounter,
+    #[cfg(feature = "rtu")]
+    GetCommEventLog,
+    #[cfg(feature = "rtu")]
+    ReportServerId,
+    //TODO:
+    //- ReadFileRecord
+    //- WriteFileRecord
+    //- MaskWriteRegiger
+    //TODO:
+    //- Read FifoQueue
+    //- EncapsulatedInterfaceTransport
+    //- CanOpenGeneralReferenceRequestAndResponsePdu
+    //- ReadDeviceIdentification
+    Custom(u8),
+}
+
+impl From<u8> for FnCode {
+    fn from(c: u8) -> Self {
+        use FnCode::*;
+
+        match c {
+            0x01 => ReadCoils,
+            0x02 => ReadDiscreteInputs,
+            0x05 => WriteSingleCoil,
+            0x0F => WriteMultipleCoils,
+            0x04 => ReadInputRegisters,
+            0x03 => ReadHoldingRegisters,
+            0x06 => WriteSingleRegister,
+            0x10 => WriteMultipleRegisters,
+            0x17 => ReadWriteMultipleRegisters,
+            #[cfg(feature = "rtu")]
+            0x07 => ReadExceptionStatus,
+            #[cfg(feature = "rtu")]
+            0x08 => Diagnostics,
+            #[cfg(feature = "rtu")]
+            0x0B => GetCommEventCounter,
+            #[cfg(feature = "rtu")]
+            0x0C => GetCommEventLog,
+            #[cfg(feature = "rtu")]
+            0x11 => ReportServerId,
+            _ => Custom(c),
+        }
+    }
+}
+
+impl Into<u8> for FnCode {
+    fn into(self: Self) -> u8 {
+        use FnCode::*;
+
+        match self {
+            ReadCoils => 0x01,
+            ReadDiscreteInputs => 0x02,
+            WriteSingleCoil => 0x05,
+            WriteMultipleCoils => 0x0F,
+            ReadInputRegisters => 0x04,
+            ReadHoldingRegisters => 0x03,
+            WriteSingleRegister => 0x06,
+            WriteMultipleRegisters => 0x10,
+            ReadWriteMultipleRegisters => 0x17,
+            #[cfg(feature = "rtu")]
+            ReadExceptionStatus => 0x07,
+            #[cfg(feature = "rtu")]
+            Diagnostics => 0x08,
+            #[cfg(feature = "rtu")]
+            GetCommEventCounter => 0x0B,
+            #[cfg(feature = "rtu")]
+            GetCommEventLog => 0x0C,
+            #[cfg(feature = "rtu")]
+            ReportServerId => 0x11,
+            Custom(c) => c,
+        }
+    }
+}
 
 /// A Modbus sub-function code is represented by an unsigned 16 bit integer.
-pub(crate) type SubFunctionCode = u16;
+pub(crate) type SubFnCode = u16;
 
 /// A Modbus address is represented by 16 bit (from `0` to `65535`).
 pub(crate) type Address = u16;
@@ -40,7 +131,7 @@ pub enum Request<'r> {
     #[cfg(feature = "rtu")]
     ReadExceptionStatus,
     #[cfg(feature = "rtu")]
-    Diagnostics(SubFunctionCode, &'r [Word]),
+    Diagnostics(SubFnCode, &'r [Word]),
     #[cfg(feature = "rtu")]
     GetCommEventCounter,
     #[cfg(feature = "rtu")]
@@ -56,7 +147,7 @@ pub enum Request<'r> {
     //- EncapsulatedInterfaceTransport
     //- CanOpenGeneralReferenceRequestAndResponsePdu
     //- ReadDeviceIdentification
-    Custom(FunctionCode, &'r [u8]),
+    Custom(FnCode, &'r [u8]),
 }
 
 #[cfg(feature = "rtu")]
@@ -97,7 +188,67 @@ pub enum Response<'r> {
     //- EncapsulatedInterfaceTransport
     //- CanOpenGeneralReferenceRequestAndResponsePdu
     //- ReadDeviceIdentification
-    Custom(FunctionCode, &'r [u8]),
+    Custom(FnCode, &'r [u8]),
+}
+
+impl<'r> From<Request<'r>> for FnCode {
+    fn from(r: Request<'r>) -> Self {
+        use FnCode as c;
+        use Request::*;
+
+        match r {
+            ReadCoils(_, _) => c::ReadCoils,
+            ReadDiscreteInputs(_, _) => c::ReadDiscreteInputs,
+            WriteSingleCoil(_, _) => c::WriteSingleCoil,
+            WriteMultipleCoils(_, _) => c::WriteMultipleCoils,
+            ReadInputRegisters(_, _) => c::ReadInputRegisters,
+            ReadHoldingRegisters(_, _) => c::ReadHoldingRegisters,
+            WriteSingleRegister(_, _) => c::WriteSingleRegister,
+            WriteMultipleRegisters(_, _) => c::WriteMultipleRegisters,
+            ReadWriteMultipleRegisters(_, _, _, _) => c::ReadWriteMultipleRegisters,
+            #[cfg(feature = "rtu")]
+            ReadExceptionStatus => c::ReadExceptionStatus,
+            #[cfg(feature = "rtu")]
+            Diagnostics(_, _) => c::Diagnostics,
+            #[cfg(feature = "rtu")]
+            GetCommEventCounter => c::GetCommEventCounter,
+            #[cfg(feature = "rtu")]
+            GetCommEventLog => c::GetCommEventLog,
+            #[cfg(feature = "rtu")]
+            ReportServerId => c::ReportServerId,
+            Custom(code, _) => code,
+        }
+    }
+}
+
+impl<'r> From<Response<'r>> for FnCode {
+    fn from(r: Response<'r>) -> Self {
+        use FnCode as c;
+        use Response::*;
+
+        match r {
+            ReadCoils(_) => c::ReadCoils,
+            ReadDiscreteInputs(_) => c::ReadDiscreteInputs,
+            WriteSingleCoil(_) => c::WriteSingleCoil,
+            WriteMultipleCoils(_, _) => c::WriteMultipleCoils,
+            ReadInputRegisters(_) => c::ReadInputRegisters,
+            ReadHoldingRegisters(_) => c::ReadHoldingRegisters,
+            WriteSingleRegister(_, _) => c::WriteSingleRegister,
+            WriteMultipleRegisters(_, _) => c::WriteMultipleRegisters,
+            ReadWriteMultipleRegisters(_) => c::ReadWriteMultipleRegisters,
+            #[cfg(feature = "rtu")]
+            ReadExceptionStatus(_) => c::ReadExceptionStatus,
+            #[cfg(feature = "rtu")]
+            Diagnostics(_) => c::Diagnostics,
+            #[cfg(feature = "rtu")]
+            GetCommEventCounter(_, _) => c::GetCommEventCounter,
+            #[cfg(feature = "rtu")]
+            GetCommEventLog(_, _, _, _) => c::GetCommEventLog,
+            #[cfg(feature = "rtu")]
+            ReportServerId(_, _) => c::ReportServerId,
+            Custom(code, _) => code,
+        }
+    }
 }
 
 /// A server (slave) exception.
@@ -131,4 +282,67 @@ impl fmt::Display for Exception {
         };
         write!(f, "{}", desc)
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn function_code_into_u8() {
+        let x: u8 = FnCode::WriteMultipleCoils.into();
+        assert_eq!(x, 15);
+        let x: u8 = FnCode::Custom(0xBB).into();
+        assert_eq!(x, 0xBB);
+    }
+
+    #[test]
+    fn function_code_from_u8() {
+        assert_eq!(FnCode::from(15), FnCode::WriteMultipleCoils);
+        assert_eq!(FnCode::from(0xBB), FnCode::Custom(0xBB));
+    }
+
+    #[test]
+    fn function_code_from_request() {
+        use Request::*;
+        let requests = &[
+            (ReadCoils(0, 0), 1),
+            (ReadDiscreteInputs(0, 0), 2),
+            (WriteSingleCoil(0, true), 5),
+            (WriteMultipleCoils(0, &[]), 0x0F),
+            (ReadInputRegisters(0, 0), 0x04),
+            (ReadHoldingRegisters(0, 0), 0x03),
+            (WriteSingleRegister(0, 0), 0x06),
+            (WriteMultipleRegisters(0, &[]), 0x10),
+            (ReadWriteMultipleRegisters(0, 0, 0, &[]), 0x17),
+            (Custom(FnCode::Custom(88), &[]), 88),
+        ];
+        for (req, expected) in requests {
+            let code: u8 = FnCode::from(*req).into();
+            assert_eq!(*expected, code);
+        }
+    }
+
+    #[test]
+    fn function_code_from_response() {
+        use Response::*;
+        let responses = &[
+            (ReadCoils(&[]), 1),
+            (ReadDiscreteInputs(&[]), 2),
+            (WriteSingleCoil(0x0), 5),
+            (WriteMultipleCoils(0x0, 0x0), 0x0F),
+            (ReadInputRegisters(&[]), 0x04),
+            (ReadHoldingRegisters(&[]), 0x03),
+            (WriteSingleRegister(0, 0), 0x06),
+            (WriteMultipleRegisters(0, 0), 0x10),
+            (ReadWriteMultipleRegisters(&[]), 0x17),
+            (Custom(FnCode::Custom(99), &[]), 99),
+        ];
+        for (req, expected) in responses {
+            let code: u8 = FnCode::from(*req).into();
+            assert_eq!(*expected, code);
+        }
+    }
+
 }
