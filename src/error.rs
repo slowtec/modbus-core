@@ -2,9 +2,9 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// Invalid coil value
-    CoilValue,
+    CoilValue(u16),
     /// Invalid buffer size
     BufferSize,
     /// Invalid function code
-    FnCode,
+    FnCode(u8),
 }

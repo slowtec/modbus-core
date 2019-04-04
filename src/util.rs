@@ -16,7 +16,7 @@ pub fn u16_coil_to_bool(coil: u16) -> Result<bool, Error> {
     match coil {
         0xFF00 => Ok(true),
         0x0000 => Ok(false),
-        _ => Err(Error::CoilValue),
+        _ => Err(Error::CoilValue(coil)),
     }
 }
 
@@ -66,7 +66,10 @@ mod tests {
     fn convert_coil_to_bool() {
         assert_eq!(u16_coil_to_bool(0xFF00).unwrap(), true);
         assert_eq!(u16_coil_to_bool(0x0000).unwrap(), false);
-        assert_eq!(u16_coil_to_bool(0x1234).err().unwrap(), Error::CoilValue);
+        assert_eq!(
+            u16_coil_to_bool(0x1234).err().unwrap(),
+            Error::CoilValue(0x1234)
+        );
     }
 
     #[test]

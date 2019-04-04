@@ -48,7 +48,7 @@ pub fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>, Error> {
             }
         }
         _ => {
-            return Err(Error::FnCode);
+            return Err(Error::FnCode(fn_code));
         }
     };
     Ok(len)
@@ -81,7 +81,7 @@ pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>, Error> {
             }
         }
         0x81...0xAB => Some(2),
-        _ => return Err(Error::FnCode),
+        _ => return Err(Error::FnCode(fn_code)),
     };
     Ok(len)
 }
@@ -170,7 +170,10 @@ mod tests {
         assert_eq!(response_pdu_len(buf).unwrap(), Some(101));
 
         let buf = &mut [0x66, 0x00, 99, 0x00];
-        assert_eq!(response_pdu_len(buf).err().unwrap(), Error::FnCode);
+        assert_eq!(response_pdu_len(buf).err().unwrap(), Error::FnCode(0));
+
+        let buf = &mut [0x66, 0xee, 99, 0x00];
+        assert_eq!(response_pdu_len(buf).err().unwrap(), Error::FnCode(0xee));
 
         buf[1] = 0x01;
         assert_eq!(response_pdu_len(buf).unwrap(), Some(101));
