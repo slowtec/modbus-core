@@ -46,7 +46,7 @@ pub fn decode(
     loop {
         let mut retry = false;
         if drop_cnt + 1 >= buf.len() {
-            return Err(Error::BufferSize);
+            return Ok(None);
         }
         let raw_frame = &buf[drop_cnt..];
         let res = match decoder_type {
@@ -416,7 +416,7 @@ mod tests {
         #[test]
         fn decode_rtu_response_with_max_drops() {
             let buf = &[0x42; 10];
-            assert!(decode(DecoderType::Response, buf).is_err());
+            assert!(decode(DecoderType::Response, buf).unwrap().is_none());
 
             let buf = &mut [0x42; MAX_FRAME_LEN * 2];
             buf[256] = 0x01; // slave address
