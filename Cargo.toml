@@ -10,6 +10,7 @@ repository = "https://github.com/slowtec/tokio-modbus"
 edition = "2018"
 
 [dependencies]
+log = "*"
 byteorder = { version =  "1.3", default-features = false }
 
 [features]

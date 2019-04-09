@@ -1,5 +1,8 @@
 #![no_std]
 
+#[macro_use]
+extern crate log;
+
 use core::fmt;
 
 mod error;

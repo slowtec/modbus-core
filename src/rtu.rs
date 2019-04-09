@@ -8,8 +8,97 @@ type Result<T> = core::result::Result<T, Error>;
 /// Slave ID
 pub type SlaveId = u8;
 
+// [MODBUS over Serial Line Specification and Implementation Guide V1.02](http://modbus.org/docs/Modbus_over_serial_line_V1_02.pdf), page 13
+// "The maximum size of a MODBUS RTU frame is 256 bytes."
+const MAX_FRAME_LEN: usize = 256;
+
+/// The type of decoding
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DecoderType {
+    Request,
+    Response,
+}
+
+/// An extracted RTU PDU frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DecodedFrame<'a> {
+    pub slave: SlaveId,
+    pub pdu: &'a [u8],
+}
+
+/// The location of all bytes that belong to the frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FrameLocation {
+    /// The index where the frame starts
+    pub start: usize,
+    /// Number of bytes that belong to the frame
+    pub size: usize,
+}
+
+/// Decode RTU PDU frames from a buffer.
+pub fn decode(
+    decoder_type: DecoderType,
+    buf: &[u8],
+) -> Result<Option<(DecodedFrame, FrameLocation)>> {
+    use DecoderType::*;
+    let mut drop_cnt = 0;
+
+    loop {
+        let mut retry = false;
+        if drop_cnt + 1 >= buf.len() {
+            return Err(Error::BufferSize);
+        }
+        let raw_frame = &buf[drop_cnt..];
+        let res = match decoder_type {
+            Request => request_pdu_len(raw_frame),
+            Response => response_pdu_len(raw_frame),
+        }
+        .and_then(|pdu_len| {
+            retry = false;
+            if let Some(pdu_len) = pdu_len {
+                extract_frame(raw_frame, pdu_len).map(|x| {
+                    x.map(|res| {
+                        (
+                            res,
+                            FrameLocation {
+                                start: drop_cnt,
+                                size: pdu_len + 3,
+                            },
+                        )
+                    })
+                })
+            } else {
+                // Incomplete frame
+                Ok(None)
+            }
+        })
+        .or_else(|err| {
+            let pdu_type = match decoder_type {
+                Request => "request",
+                Response => "response",
+            };
+            if drop_cnt + 1 >= MAX_FRAME_LEN {
+                error!(
+                    "Giving up to decode frame after dropping {} byte(s): {:X?}",
+                    drop_cnt,
+                    &buf[0..drop_cnt]
+                );
+                return Err(err);
+            }
+            warn!("Failed to decode {} frame: {}", pdu_type, err);
+            drop_cnt += 1;
+            retry = true;
+            Ok(None)
+        });
+
+        if !retry {
+            return res;
+        }
+    }
+}
+
 /// Extract a PDU frame out of a buffer.
-pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<(SlaveId, &[u8])>> {
+pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>> {
     let adu_len = 1 + pdu_len;
     if buf.len() >= adu_len + 2 {
         let (adu_buf, buf) = buf.split_at(adu_len);
@@ -22,7 +111,10 @@ pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<(SlaveId, &[u8
         }
         let (slave_id, pdu_data) = adu_buf.split_at(1);
         let slave_id = slave_id[0];
-        return Ok(Some((slave_id, pdu_data)));
+        return Ok(Some(DecodedFrame {
+            slave: slave_id,
+            pdu: pdu_data,
+        }));
     }
     // Incomplete frame
     Ok(None)
@@ -293,9 +385,50 @@ mod tests {
                 0x03, // -- start of next frame
             ];
             let pdu_len = response_pdu_len(buf).unwrap().unwrap();
-            let (id, res) = extract_frame(buf, pdu_len).unwrap().unwrap();
-            assert_eq!(id, 0x01);
-            assert_eq!(res.len(), 6);
+            let DecodedFrame { slave, pdu } = extract_frame(buf, pdu_len).unwrap().unwrap();
+            assert_eq!(slave, 0x01);
+            assert_eq!(pdu.len(), 6);
+        }
+
+        #[test]
+        fn decode_rtu_response_drop_invalid_bytes() {
+            let buf = &[
+                0x42, // dropped byte
+                0x43, // dropped byte
+                0x01, // slave address
+                0x03, // function code
+                0x04, // byte count
+                0x89, //
+                0x02, //
+                0x42, //
+                0xC7, //
+                0x00, // crc
+                0x9D, // crc
+                0x00,
+            ];
+            let (frame, location) = decode(DecoderType::Response, buf).unwrap().unwrap();
+            assert_eq!(frame.slave, 0x01);
+            assert_eq!(frame.pdu.len(), 6);
+            assert_eq!(location.start, 2);
+            assert_eq!(location.size, 9);
+        }
+
+        #[test]
+        fn decode_rtu_response_with_max_drops() {
+            let buf = &[0x42; 10];
+            assert!(decode(DecoderType::Response, buf).is_err());
+
+            let buf = &mut [0x42; MAX_FRAME_LEN * 2];
+            buf[256] = 0x01; // slave address
+            buf[257] = 0x03; // function code
+            buf[258] = 0x04; // byte count
+            buf[259] = 0x89; //
+            buf[260] = 0x02; //
+            buf[261] = 0x42; //
+            buf[262] = 0xC7; //
+            buf[263] = 0x00; // crc
+            buf[264] = 0x9D; // crc
+            assert!(decode(DecoderType::Response, buf).is_err());
         }
     }
 }
