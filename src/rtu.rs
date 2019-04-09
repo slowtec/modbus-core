@@ -3,6 +3,31 @@
 use super::*;
 use byteorder::{BigEndian, ByteOrder};
 
+type Result<T> = core::result::Result<T, Error>;
+
+/// Slave ID
+pub type SlaveId = u8;
+
+/// Extract a PDU frame out of a buffer.
+pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<(SlaveId, &[u8])>> {
+    let adu_len = 1 + pdu_len;
+    if buf.len() >= adu_len + 2 {
+        let (adu_buf, buf) = buf.split_at(adu_len);
+        let (crc_buf, _) = buf.split_at(2);
+        // Read trailing CRC and verify ADU
+        let expected_crc = BigEndian::read_u16(&crc_buf);
+        let actual_crc = crc16(adu_buf);
+        if expected_crc != actual_crc {
+            return Err(Error::Crc(expected_crc, actual_crc));
+        }
+        let (slave_id, pdu_data) = adu_buf.split_at(1);
+        let slave_id = slave_id[0];
+        return Ok(Some((slave_id, pdu_data)));
+    }
+    // Incomplete frame
+    Ok(None)
+}
+
 /// Calculate the CRC (Cyclic Redundancy Check) sum.
 pub fn crc16(data: &[u8]) -> u16 {
     let mut crc = 0xFFFF;
@@ -21,7 +46,7 @@ pub fn crc16(data: &[u8]) -> u16 {
 }
 
 /// Extract the PDU length out of the ADU request buffer.
-pub fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>, Error> {
+pub fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
     if adu_buf.len() < 2 {
         return Ok(None);
     }
@@ -55,7 +80,7 @@ pub fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>, Error> {
 }
 
 /// Extract the PDU length out of the ADU response buffer.
-pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>, Error> {
+pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
     if adu_buf.len() < 2 {
         return Ok(None);
     }
@@ -101,9 +126,6 @@ mod tests {
 
     #[test]
     fn test_request_pdu_len() {
-        //let mut buf = BytesMut::new();
-
-        //buf.extend_from_slice(&[0x66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         let buf = &mut [0x66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
         assert!(request_pdu_len(buf).is_err());
 
@@ -232,6 +254,48 @@ mod tests {
         for i in 0x81..0xAB {
             buf[1] = i;
             assert_eq!(response_pdu_len(buf).unwrap(), Some(2));
+        }
+    }
+
+    mod frame_decoder {
+
+        use super::*;
+
+        #[test]
+        fn extract_partly_received_rtu_frame() {
+            let buf = &[
+                0x12, // slave address
+                0x02, // function code
+                0x03, // byte count
+                0x00, // data
+                0x00, // data
+                0x00, // data
+                0x00, // CRC first byte
+                      // missing crc second byte
+            ];
+            let pdu_len = request_pdu_len(buf).unwrap().unwrap();
+            let res = extract_frame(buf, pdu_len).unwrap();
+            assert!(res.is_none());
+        }
+
+        #[test]
+        fn extract_usual_rtu_response_frame() {
+            let buf = &[
+                0x01, // slave address
+                0x03, // function code
+                0x04, // byte count
+                0x89, //
+                0x02, //
+                0x42, //
+                0xC7, //
+                0x00, // crc
+                0x9D, // crc
+                0x03, // -- start of next frame
+            ];
+            let pdu_len = response_pdu_len(buf).unwrap().unwrap();
+            let (id, res) = extract_frame(buf, pdu_len).unwrap().unwrap();
+            assert_eq!(id, 0x01);
+            assert_eq!(res.len(), 6);
         }
     }
 }

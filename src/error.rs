@@ -9,6 +9,8 @@ pub enum Error {
     BufferSize,
     /// Invalid function code
     FnCode(u8),
+    /// Invalid CRC
+    Crc(u16, u16),
 }
 
 impl fmt::Display for Error {
@@ -19,6 +21,11 @@ impl fmt::Display for Error {
             CoilValue(v) => write!(f, "Invalid coil value: {}", v),
             BufferSize => write!(f, "Invalid buffer size"),
             FnCode(fn_code) => write!(f, "Invalid function code: 0x{:0>2X}", fn_code),
+            Crc(expected, actual) => write!(
+                f,
+                "Invalid CRC: expected = 0x{:0>4X}, actual = 0x{:0>4X}",
+                expected, actual
+            ),
         }
     }
 }
