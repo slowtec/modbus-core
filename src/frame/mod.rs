@@ -1,3 +1,6 @@
+pub(crate) mod rtu;
+pub(crate) mod tcp;
+
 use core::fmt;
 
 /// A Modbus function code.
@@ -154,11 +157,11 @@ pub struct ExceptionResponse {
 }
 
 /// Represents a message from the client (slave) to the server (master).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestPdu<'r>(pub Request<'r>);
 
 /// Represents a message from the server (slave) to the client (master).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResponsePdu<'r>(pub Result<Response<'r>, ExceptionResponse>);
 
 #[cfg(feature = "rtu")]

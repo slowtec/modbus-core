@@ -1,12 +1,10 @@
 //! Modbus RTU
 
 use super::*;
+pub use crate::frame::rtu::*;
 use byteorder::{BigEndian, ByteOrder};
 
 type Result<T> = core::result::Result<T, Error>;
-
-/// Slave ID
-pub type SlaveId = u8;
 
 // [MODBUS over Serial Line Specification and Implementation Guide V1.02](http://modbus.org/docs/Modbus_over_serial_line_V1_02.pdf), page 13
 // "The maximum size of a MODBUS RTU frame is 256 bytes."
