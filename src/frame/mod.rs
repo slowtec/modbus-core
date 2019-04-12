@@ -115,13 +115,65 @@ pub(crate) type Word = u16;
 /// Number of items to process (`0` - `65535`).
 pub(crate) type Quantity = u16;
 
+/// Raw PDU data
+type RawData<'r> = &'r [u8];
+
+/// Packed coils
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Coils<'c> {
+    data: RawData<'c>,
+    quantity: usize,
+}
+
+impl<'c> Coils<'c> {
+    /// Quantity of coils
+    pub const fn len(&self) -> usize {
+        self.quantity
+    }
+    /// Get a specific coil.
+    pub fn get(&self, idx: usize) -> Option<Coil> {
+        if idx + 1 > self.quantity {
+            return None;
+        }
+        Some((self.data[(idx as u16 / 8u16) as usize] >> (idx % 8)) & 0b1 > 0)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CoilsIter<'c> {
+    cnt: usize,
+    coils: Coils<'c>,
+}
+
+impl<'c> Iterator for CoilsIter<'c> {
+    type Item = Coil;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = self.coils.get(self.cnt);
+        self.cnt += 1;
+        result
+    }
+}
+
+impl<'c> IntoIterator for Coils<'c> {
+    type Item = Coil;
+    type IntoIter = CoilsIter<'c>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        CoilsIter {
+            cnt: 0,
+            coils: self,
+        }
+    }
+}
+
 /// A request represents a message from the client (master) to the server (slave).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Request<'r> {
     ReadCoils(Address, Quantity),
     ReadDiscreteInputs(Address, Quantity),
     WriteSingleCoil(Address, Coil),
-    WriteMultipleCoils(Address, &'r [Coil]),
+    WriteMultipleCoils(Address, Coils<'r>),
     ReadInputRegisters(Address, Quantity),
     ReadHoldingRegisters(Address, Quantity),
     WriteSingleRegister(Address, Word),
@@ -174,8 +226,8 @@ type MessageCount = u16;
 /// The response data of a successfull request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Response<'r> {
-    ReadCoils(&'r [Coil]),
-    ReadDiscreteInputs(&'r [Coil]),
+    ReadCoils(Coils<'r>),
+    ReadDiscreteInputs(Coils<'r>),
     WriteSingleCoil(Address),
     WriteMultipleCoils(Address, Quantity),
     ReadInputRegisters(&'r [Word]),
@@ -324,7 +376,16 @@ mod tests {
             (ReadCoils(0, 0), 1),
             (ReadDiscreteInputs(0, 0), 2),
             (WriteSingleCoil(0, true), 5),
-            (WriteMultipleCoils(0, &[]), 0x0F),
+            (
+                WriteMultipleCoils(
+                    0,
+                    Coils {
+                        quantity: 0,
+                        data: &[],
+                    },
+                ),
+                0x0F,
+            ),
             (ReadInputRegisters(0, 0), 0x04),
             (ReadHoldingRegisters(0, 0), 0x03),
             (WriteSingleRegister(0, 0), 0x06),
@@ -342,8 +403,20 @@ mod tests {
     fn function_code_from_response() {
         use Response::*;
         let responses = &[
-            (ReadCoils(&[]), 1),
-            (ReadDiscreteInputs(&[]), 2),
+            (
+                ReadCoils(Coils {
+                    quantity: 0,
+                    data: &[],
+                }),
+                1,
+            ),
+            (
+                ReadDiscreteInputs(Coils {
+                    quantity: 0,
+                    data: &[],
+                }),
+                2,
+            ),
             (WriteSingleCoil(0x0), 5),
             (WriteMultipleCoils(0x0, 0x0), 0x0F),
             (ReadInputRegisters(&[]), 0x04),
@@ -357,5 +430,82 @@ mod tests {
             let code: u8 = FnCode::from(*req).into();
             assert_eq!(*expected, code);
         }
+    }
+
+    #[test]
+    fn coils_len() {
+        let coils = Coils {
+            data: &[0, 1, 2],
+            quantity: 5,
+        };
+        assert_eq!(coils.len(), 5);
+    }
+
+    #[test]
+    fn coils_get() {
+        let coils = Coils {
+            data: &[0b1],
+            quantity: 1,
+        };
+        assert_eq!(coils.get(0), Some(true));
+        assert_eq!(coils.get(1), None);
+
+        let coils = Coils {
+            data: &[0b01],
+            quantity: 2,
+        };
+        assert_eq!(coils.get(0), Some(true));
+        assert_eq!(coils.get(1), Some(false));
+        assert_eq!(coils.get(2), None);
+
+        let coils = Coils {
+            data: &[0xff, 0b11],
+            quantity: 10,
+        };
+        for i in 0..10 {
+            assert_eq!(coils.get(i), Some(true));
+        }
+        assert_eq!(coils.get(11), None);
+    }
+
+    #[test]
+    fn coils_iter() {
+        let coils = Coils {
+            data: &[0b0101_0011],
+            quantity: 5,
+        };
+        let mut coils_iter = CoilsIter { cnt: 0, coils };
+        assert_eq!(coils_iter.next(), Some(true));
+        assert_eq!(coils_iter.next(), Some(true));
+        assert_eq!(coils_iter.next(), Some(false));
+        assert_eq!(coils_iter.next(), Some(false));
+        assert_eq!(coils_iter.next(), Some(true));
+        assert_eq!(coils_iter.next(), None);
+    }
+
+    #[test]
+    fn coils_into_iter() {
+        let coils = Coils {
+            data: &[0b0101_0011],
+            quantity: 3,
+        };
+        let mut coils_iter = coils.into_iter();
+        assert_eq!(coils_iter.next(), Some(true));
+        assert_eq!(coils_iter.next(), Some(true));
+        assert_eq!(coils_iter.next(), Some(false));
+        assert_eq!(coils_iter.next(), None);
+    }
+
+    #[test]
+    fn iter_over_coils() {
+        let coils = Coils {
+            data: &[0b0101_0011],
+            quantity: 3,
+        };
+        let mut cnt = 0;
+        for c in coils {
+            cnt += 1;
+        }
+        assert_eq!(cnt, 3);
     }
 }
