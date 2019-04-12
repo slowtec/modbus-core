@@ -18,3 +18,8 @@ default = ["tcp", "rtu"]
 tcp = []
 rtu = []
 std = ["byteorder/std"]
+
+[badges]
+travis-ci = { repository = "slowtec/modbus-core" }
+coveralls = { repository = "slowtec/modbus-core", branch = "master", service = "github" }
+maintenance = { status = "actively-developed" }
