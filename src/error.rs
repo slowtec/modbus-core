@@ -11,6 +11,8 @@ pub enum Error {
     FnCode(u8),
     /// Invalid CRC
     Crc(u16, u16),
+    /// Invalid exception code
+    ExceptionCode(u8),
 }
 
 impl fmt::Display for Error {
@@ -26,6 +28,7 @@ impl fmt::Display for Error {
                 "Invalid CRC: expected = 0x{:0>4X}, actual = 0x{:0>4X}",
                 expected, actual
             ),
+            ExceptionCode(code) => write!(f, "Invalid exception code:0x {:0>2X}", code),
         }
     }
 }
