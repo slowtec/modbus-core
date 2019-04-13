@@ -1,21 +1,13 @@
 //! Modbus RTU
 
 use super::*;
-pub use crate::frame::rtu::*;
 use byteorder::{BigEndian, ByteOrder};
 
-type Result<T> = core::result::Result<T, Error>;
+pub use crate::frame::rtu::*;
 
 // [MODBUS over Serial Line Specification and Implementation Guide V1.02](http://modbus.org/docs/Modbus_over_serial_line_V1_02.pdf), page 13
 // "The maximum size of a MODBUS RTU frame is 256 bytes."
 const MAX_FRAME_LEN: usize = 256;
-
-/// The type of decoding
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DecoderType {
-    Request,
-    Response,
-}
 
 /// An extracted RTU PDU frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
