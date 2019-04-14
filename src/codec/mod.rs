@@ -151,6 +151,67 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
     }
 }
 
+impl<'r> TryFrom<&'r [u8]> for Response<'r> {
+    type Error = Error;
+
+    fn try_from(bytes: &'r [u8]) -> Result<Self> {
+        use crate::frame::Response::*;
+        let fn_code = bytes[0];
+        if bytes.len() < min_response_pdu_len(fn_code.into()) {
+            return Err(Error::BufferSize);
+        }
+        use FnCode as f;
+        let rsp = match FnCode::from(fn_code) {
+            f::ReadCoils | FnCode::ReadDiscreteInputs => {
+                let byte_count = bytes[1] as usize;
+                if byte_count + 2 > bytes.len() {
+                    return Err(Error::BufferSize);
+                }
+                let data = &bytes[2..byte_count + 2];
+                // Here we have not information about the exact requested quantity
+                // therefore we just assume that the whole byte is meant.
+                let quantity = byte_count * 8;
+
+                match FnCode::from(fn_code) {
+                    FnCode::ReadCoils => ReadCoils(Coils { quantity, data }),
+                    FnCode::ReadDiscreteInputs => ReadDiscreteInputs(Coils { quantity, data }),
+                    _ => unreachable!(),
+                }
+            }
+            f::WriteSingleCoil => WriteSingleCoil(BigEndian::read_u16(&bytes[1..])),
+
+            f::WriteMultipleCoils | f::WriteSingleRegister | f::WriteMultipleRegisters => {
+                let addr = BigEndian::read_u16(&bytes[1..]);
+                let payload = BigEndian::read_u16(&bytes[3..]);
+                match FnCode::from(fn_code) {
+                    f::WriteMultipleCoils => WriteMultipleCoils(addr, payload),
+                    f::WriteSingleRegister => WriteSingleRegister(addr, payload),
+                    f::WriteMultipleRegisters => WriteMultipleRegisters(addr, payload),
+                    _ => unreachable!(),
+                }
+            }
+            f::ReadInputRegisters | f::ReadHoldingRegisters | f::ReadWriteMultipleRegisters => {
+                let byte_count = bytes[1] as usize;
+                let quantity = byte_count / 2;
+                if byte_count + 2 > bytes.len() {
+                    return Err(Error::BufferSize);
+                }
+                let data = &bytes[2..2 + byte_count];
+                let data = Data { quantity, data };
+
+                match FnCode::from(fn_code) {
+                    f::ReadInputRegisters => ReadInputRegisters(data),
+                    f::ReadHoldingRegisters => ReadHoldingRegisters(data),
+                    f::ReadWriteMultipleRegisters => ReadWriteMultipleRegisters(data),
+                    _ => unreachable!(),
+                }
+            }
+            _ => Custom(FnCode::from(fn_code), &bytes[1..]),
+        };
+        Ok(rsp)
+    }
+}
+
 fn min_request_pdu_len(fn_code: FnCode) -> usize {
     use FnCode::*;
     match fn_code {
@@ -159,6 +220,20 @@ fn min_request_pdu_len(fn_code: FnCode) -> usize {
         WriteMultipleCoils => 6,
         WriteMultipleRegisters => 6,
         ReadWriteMultipleRegisters => 10,
+        _ => 1,
+    }
+}
+
+fn min_response_pdu_len(fn_code: FnCode) -> usize {
+    use FnCode::*;
+    match fn_code {
+        ReadCoils
+        | ReadDiscreteInputs
+        | ReadInputRegisters
+        | ReadHoldingRegisters
+        | ReadWriteMultipleRegisters => 2,
+        WriteSingleCoil => 3,
+        WriteMultipleCoils | WriteSingleRegister | WriteMultipleRegisters => 5,
         _ => 1,
     }
 }
@@ -207,6 +282,21 @@ mod tests {
         assert_eq!(min_request_pdu_len(WriteMultipleCoils), 6);
         assert_eq!(min_request_pdu_len(WriteMultipleRegisters), 6);
         assert_eq!(min_request_pdu_len(ReadWriteMultipleRegisters), 10);
+    }
+
+    #[test]
+    fn test_min_response_pdu_len() {
+        use FnCode::*;
+
+        assert_eq!(min_response_pdu_len(ReadCoils), 2);
+        assert_eq!(min_response_pdu_len(ReadDiscreteInputs), 2);
+        assert_eq!(min_response_pdu_len(ReadInputRegisters), 2);
+        assert_eq!(min_response_pdu_len(WriteSingleCoil), 3);
+        assert_eq!(min_response_pdu_len(ReadHoldingRegisters), 2);
+        assert_eq!(min_response_pdu_len(WriteSingleRegister), 5);
+        assert_eq!(min_response_pdu_len(WriteMultipleCoils), 5);
+        assert_eq!(min_response_pdu_len(WriteMultipleRegisters), 5);
+        assert_eq!(min_response_pdu_len(ReadWriteMultipleRegisters), 2);
     }
 
     mod serialize_requests {
@@ -361,6 +451,142 @@ mod tests {
     }
 
     mod deserialize_responses {
-        //TODO
+        use super::*;
+
+        #[test]
+        fn read_coils() {
+            let bytes: &[u8] = &[1, 1, 0b_0000_1001];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(
+                rsp,
+                Response::ReadCoils(Coils {
+                    quantity: 8,
+                    data: &[0b_0000_1001]
+                })
+            );
+        }
+
+        #[test]
+        fn read_no_coils() {
+            let bytes: &[u8] = &[1, 0];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(
+                rsp,
+                Response::ReadCoils(Coils {
+                    quantity: 0,
+                    data: &[]
+                })
+            );
+        }
+
+        #[test]
+        fn read_coils_with_invalid_byte_count() {
+            let bytes: &[u8] = &[1, 2, 0x6];
+            assert!(Response::try_from(bytes).is_err());
+        }
+
+        #[test]
+        fn read_discrete_inputs() {
+            let bytes: &[u8] = &[2, 1, 0b_0000_1001];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(
+                rsp,
+                Response::ReadDiscreteInputs(Coils {
+                    quantity: 8,
+                    data: &[0b_0000_1001]
+                })
+            );
+        }
+
+        #[test]
+        fn write_single_coil() {
+            let bytes: &[u8] = &[5, 0x00, 0x33];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(rsp, Response::WriteSingleCoil(0x33));
+
+            let broken_bytes: &[u8] = &[5, 0x00];
+            assert!(Response::try_from(broken_bytes).is_err());
+        }
+
+        #[test]
+        fn write_multiple_coils() {
+            let bytes: &[u8] = &[0x0F, 0x33, 0x11, 0x00, 0x05];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(rsp, Response::WriteMultipleCoils(0x3311, 5));
+            let broken_bytes: &[u8] = &[0x0F, 0x33, 0x11, 0x00];
+            assert!(Response::try_from(broken_bytes).is_err());
+        }
+
+        #[test]
+        fn read_input_registers() {
+            let bytes: &[u8] = &[4, 0x06, 0xAA, 0x00, 0xCC, 0xBB, 0xEE, 0xDD];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(
+                rsp,
+                Response::ReadInputRegisters(Data {
+                    quantity: 3,
+                    data: &[0xAA, 0x00, 0xCC, 0xBB, 0xEE, 0xDD]
+                })
+            );
+        }
+
+        #[test]
+        fn read_holding_registers() {
+            let bytes: &[u8] = &[3, 0x04, 0xAA, 0x00, 0x11, 0x11];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(
+                rsp,
+                Response::ReadHoldingRegisters(Data {
+                    quantity: 2,
+                    data: &[0xAA, 0x00, 0x11, 0x11]
+                })
+            );
+        }
+
+        #[test]
+        fn write_single_register() {
+            let bytes: &[u8] = &[6, 0x00, 0x07, 0xAB, 0xCD];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(rsp, Response::WriteSingleRegister(0x07, 0xABCD));
+            let broken_bytes: &[u8] = &[6, 0x00, 0x07, 0xAB];
+            assert!(Response::try_from(broken_bytes).is_err());
+        }
+
+        #[test]
+        fn write_multiple_registers() {
+            let bytes: &[u8] = &[0x10, 0x00, 0x06, 0x00, 0x02];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(rsp, Response::WriteMultipleRegisters(0x06, 2));
+            let broken_bytes: &[u8] = &[0x10, 0x00, 0x06, 0x00];
+            assert!(Response::try_from(broken_bytes).is_err());
+        }
+
+        #[test]
+        fn read_write_multiple_registers() {
+            let bytes: &[u8] = &[0x17, 0x02, 0x12, 0x34];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(
+                rsp,
+                Response::ReadWriteMultipleRegisters(Data {
+                    quantity: 1,
+                    data: &[0x12, 0x34]
+                })
+            );
+            let broken_bytes: &[u8] = &[0x17, 0x02, 0x12];
+            assert!(Response::try_from(broken_bytes).is_err());
+        }
+
+        #[test]
+        fn custom() {
+            let bytes: &[u8] = &[0x55, 0xCC, 0x88, 0xAA, 0xFF];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(
+                rsp,
+                Response::Custom(FnCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
+            );
+            let bytes: &[u8] = &[0x66];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(rsp, Response::Custom(FnCode::Custom(0x66), &[]));
+        }
     }
 }
