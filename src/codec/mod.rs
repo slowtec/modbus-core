@@ -216,8 +216,71 @@ pub trait Encode {
     fn encode(&self, buf: &mut [u8]) -> Result<()>;
 }
 
+impl<'r> Encode for Request<'r> {
+    fn encode(&self, buf: &mut [u8]) -> Result<()> {
+        if buf.len() < self.pdu_len() {
+            return Err(Error::BufferSize);
+        }
+        use crate::frame::Request::*;
+        buf[0] = FnCode::from(*self).into();
+        match self {
+            ReadCoils(address, payload)
+            | ReadDiscreteInputs(address, payload)
+            | ReadInputRegisters(address, payload)
+            | ReadHoldingRegisters(address, payload)
+            | WriteSingleRegister(address, payload) => {
+                BigEndian::write_u16(&mut buf[1..], *address);
+                BigEndian::write_u16(&mut buf[3..], *payload);
+            }
+            WriteSingleCoil(address, state) => {
+                BigEndian::write_u16(&mut buf[1..], *address);
+                BigEndian::write_u16(&mut buf[3..], bool_to_u16_coil(*state));
+            }
+            WriteMultipleCoils(address, coils) => {
+                BigEndian::write_u16(&mut buf[1..], *address);
+                let len = coils.len();
+                BigEndian::write_u16(&mut buf[3..], len as u16);
+                buf[5] = coils.data.len() as u8;
+                for (idx, byte) in coils.data.iter().enumerate() {
+                    buf[idx + 6] = *byte;
+                }
+            }
+            WriteMultipleRegisters(address, words) => {
+                BigEndian::write_u16(&mut buf[1..], *address);
+                let len = words.len();
+                BigEndian::write_u16(&mut buf[3..], len as u16);
+                buf[5] = len as u8 * 2;
+                for (idx, byte) in words.data.iter().enumerate() {
+                    buf[idx + 6] = *byte;
+                }
+            }
+            ReadWriteMultipleRegisters(read_address, quantity, write_address, words) => {
+                BigEndian::write_u16(&mut buf[1..], *read_address);
+                BigEndian::write_u16(&mut buf[3..], *quantity);
+                BigEndian::write_u16(&mut buf[5..], *write_address);
+                let n = words.len();
+                BigEndian::write_u16(&mut buf[7..], n as u16);
+                buf[9] = n as u8 * 2;
+                for (idx, byte) in words.data.iter().enumerate() {
+                    buf[idx + 10] = *byte;
+                }
+            }
+            Custom(_, custom_data) => {
+                custom_data.iter().enumerate().for_each(|(idx, d)| {
+                    buf[idx + 1] = *d;
+                });
+            }
+            _ => panic!(),
+        }
+        Ok(())
+    }
+}
+
 impl<'r> Encode for Response<'r> {
     fn encode(&self, buf: &mut [u8]) -> Result<()> {
+        if buf.len() < self.pdu_len() {
+            return Err(Error::BufferSize);
+        }
         use crate::frame::Response::*;
         buf[0] = FnCode::from(*self).into();
         match self {
@@ -346,7 +409,182 @@ mod tests {
     }
 
     mod serialize_requests {
-        //TODO
+        use super::*;
+
+        #[test]
+        fn read_coils() {
+            let bytes = &mut [0; 4];
+            assert!(Request::ReadCoils(0x12, 4).encode(bytes).is_err());
+            let bytes = &mut [0; 5];
+            Request::ReadCoils(0x12, 4).encode(bytes).unwrap();
+            assert_eq!(bytes[0], 1);
+            assert_eq!(bytes[1], 0x00);
+            assert_eq!(bytes[2], 0x12);
+            assert_eq!(bytes[3], 0x00);
+            assert_eq!(bytes[4], 0x04);
+        }
+
+        #[test]
+        fn read_discrete_inputs() {
+            let bytes = &mut [0; 5];
+            Request::ReadDiscreteInputs(0x03, 19).encode(bytes).unwrap();
+            assert_eq!(bytes[0], 2);
+            assert_eq!(bytes[1], 0x00);
+            assert_eq!(bytes[2], 0x03);
+            assert_eq!(bytes[3], 0x00);
+            assert_eq!(bytes[4], 19);
+        }
+
+        #[test]
+        fn write_single_coil() {
+            let bytes = &mut [0; 5];
+            Request::WriteSingleCoil(0x1234, true)
+                .encode(bytes)
+                .unwrap();
+            assert_eq!(bytes[0], 5);
+            assert_eq!(bytes[1], 0x12);
+            assert_eq!(bytes[2], 0x34);
+            assert_eq!(bytes[3], 0xFF);
+            assert_eq!(bytes[4], 0x00);
+        }
+
+        #[test]
+        fn write_multiple_coils() {
+            let states = &[true, false, true, true];
+            let buf = &mut [0];
+            let bytes = &mut [0; 7];
+            Request::WriteMultipleCoils(0x3311, Coils::from_bools(states, buf).unwrap())
+                .encode(bytes)
+                .unwrap();
+            assert_eq!(bytes[0], 0x0F);
+            assert_eq!(bytes[1], 0x33);
+            assert_eq!(bytes[2], 0x11);
+            assert_eq!(bytes[3], 0x00);
+            assert_eq!(bytes[4], 0x04);
+            assert_eq!(bytes[5], 0x01);
+            assert_eq!(bytes[6], 0b_0000_1101);
+        }
+
+        #[test]
+        fn read_input_registers() {
+            let bytes = &mut [0; 5];
+            Request::ReadInputRegisters(0x09, 77).encode(bytes).unwrap();
+            assert_eq!(bytes[0], 4);
+            assert_eq!(bytes[1], 0x00);
+            assert_eq!(bytes[2], 0x09);
+            assert_eq!(bytes[3], 0x00);
+            assert_eq!(bytes[4], 0x4D);
+        }
+
+        #[test]
+        fn read_holding_registers() {
+            let bytes = &mut [0; 5];
+            Request::ReadHoldingRegisters(0x09, 77)
+                .encode(bytes)
+                .unwrap();
+            assert_eq!(bytes[0], 3);
+            assert_eq!(bytes[1], 0x00);
+            assert_eq!(bytes[2], 0x09);
+            assert_eq!(bytes[3], 0x00);
+            assert_eq!(bytes[4], 0x4D);
+        }
+
+        #[test]
+        fn write_single_register() {
+            let bytes = &mut [0; 5];
+            Request::WriteSingleRegister(0x07, 0xABCD)
+                .encode(bytes)
+                .unwrap();
+            assert_eq!(bytes[0], 6);
+            assert_eq!(bytes[1], 0x00);
+            assert_eq!(bytes[2], 0x07);
+            assert_eq!(bytes[3], 0xAB);
+            assert_eq!(bytes[4], 0xCD);
+        }
+
+        #[test]
+        fn write_multiple_registers() {
+            let buf = &mut [0; 4];
+            let bytes = &mut [0; 10];
+
+            Request::WriteMultipleRegisters(
+                0x06,
+                Data::from_words(&[0xABCD, 0xEF12], buf).unwrap(),
+            )
+            .encode(bytes)
+            .unwrap();
+
+            // function code
+            assert_eq!(bytes[0], 0x10);
+
+            // write starting address
+            assert_eq!(bytes[1], 0x00);
+            assert_eq!(bytes[2], 0x06);
+
+            // quantity to write
+            assert_eq!(bytes[3], 0x00);
+            assert_eq!(bytes[4], 0x02);
+
+            // write byte count
+            assert_eq!(bytes[5], 0x04);
+
+            // values
+            assert_eq!(bytes[6], 0xAB);
+            assert_eq!(bytes[7], 0xCD);
+            assert_eq!(bytes[8], 0xEF);
+            assert_eq!(bytes[9], 0x12);
+        }
+
+        #[test]
+        fn read_write_multiple_registers() {
+            let buf = &mut [0; 4];
+            let bytes = &mut [0; 14];
+            let data = Data::from_words(&[0xABCD, 0xEF12], buf).unwrap();
+            Request::ReadWriteMultipleRegisters(0x05, 51, 0x03, data)
+                .encode(bytes)
+                .unwrap();
+
+            // function code
+            assert_eq!(bytes[0], 0x17);
+
+            // read starting address
+            assert_eq!(bytes[1], 0x00);
+            assert_eq!(bytes[2], 0x05);
+
+            // quantity to read
+            assert_eq!(bytes[3], 0x00);
+            assert_eq!(bytes[4], 0x33);
+
+            // write starting address
+            assert_eq!(bytes[5], 0x00);
+            assert_eq!(bytes[6], 0x03);
+
+            // quantity to write
+            assert_eq!(bytes[7], 0x00);
+            assert_eq!(bytes[8], 0x02);
+
+            // write byte count
+            assert_eq!(bytes[9], 0x04);
+
+            // values
+            assert_eq!(bytes[10], 0xAB);
+            assert_eq!(bytes[11], 0xCD);
+            assert_eq!(bytes[12], 0xEF);
+            assert_eq!(bytes[13], 0x12);
+        }
+
+        #[test]
+        fn custom() {
+            let bytes = &mut [0; 5];
+            Request::Custom(FnCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
+                .encode(bytes)
+                .unwrap();
+            assert_eq!(bytes[0], 0x55);
+            assert_eq!(bytes[1], 0xCC);
+            assert_eq!(bytes[2], 0x88);
+            assert_eq!(bytes[3], 0xAA);
+            assert_eq!(bytes[4], 0xFF);
+        }
     }
 
     mod deserialize_requests {
@@ -489,7 +727,6 @@ mod tests {
                 Request::Custom(FnCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
             );
         }
-        //TODO
     }
 
     mod serialize_responses {
@@ -501,6 +738,8 @@ mod tests {
             let res = Response::ReadCoils(
                 Coils::from_bools(&[true, false, false, true, false], buff).unwrap(),
             );
+            let bytes = &mut [0, 0];
+            assert!(res.encode(bytes).is_err());
             let bytes = &mut [0, 0, 0];
             res.encode(bytes).unwrap();
             assert_eq!(bytes[0], 1);
@@ -578,7 +817,6 @@ mod tests {
 
         #[test]
         fn write_single_register() {
-            let buf: &mut [u8] = &mut [0; 4];
             let res = Response::WriteSingleRegister(0x07, 0xABCD);
             let bytes = &mut [0; 5];
             res.encode(bytes).unwrap();

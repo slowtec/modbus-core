@@ -306,6 +306,45 @@ impl fmt::Display for Exception {
     }
 }
 
+impl<'r> Request<'r> {
+    /// Number of bytes required for a serialized PDU frame.
+    pub fn pdu_len(&self) -> usize {
+        use Request::*;
+        match *self {
+            ReadCoils(_, _)
+            | ReadDiscreteInputs(_, _)
+            | ReadInputRegisters(_, _)
+            | ReadHoldingRegisters(_, _)
+            | WriteSingleRegister(_, _)
+            | WriteSingleCoil(_, _) => 5,
+            WriteMultipleCoils(_, coils) => 6 + coils.data.len(),
+            WriteMultipleRegisters(_, words) => 6 + words.data.len(),
+            ReadWriteMultipleRegisters(_, _, _, words) => 10 + words.data.len(),
+            Custom(_, data) => 1 + data.len(),
+            _ => unimplemented!(), // TODO
+        }
+    }
+}
+
+impl<'r> Response<'r> {
+    /// Number of bytes required for a serialized PDU frame.
+    pub fn pdu_len(&self) -> usize {
+        use Response::*;
+        match *self {
+            ReadCoils(coils) | ReadDiscreteInputs(coils) => 2 + coils.data.len(),
+            WriteSingleCoil(_) => 3,
+            WriteMultipleCoils(_, _) | WriteMultipleRegisters(_, _) | WriteSingleRegister(_, _) => {
+                5
+            }
+            ReadInputRegisters(words)
+            | ReadHoldingRegisters(words)
+            | ReadWriteMultipleRegisters(words) => 2 + words.data.len(),
+            Custom(_, data) => 1 + data.len(),
+            _ => unimplemented!(), // TODO
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -424,5 +463,28 @@ mod tests {
             let code: u8 = FnCode::from(*req).into();
             assert_eq!(*expected, code);
         }
+    }
+
+    #[test]
+    fn test_request_pdu_len() {
+        assert_eq!(Request::ReadCoils(0x12, 5).pdu_len(), 5);
+        assert_eq!(Request::WriteSingleRegister(0x12, 0x33).pdu_len(), 5);
+        let buf = &mut [0, 0];
+        assert_eq!(
+            Request::WriteMultipleCoils(0, Coils::from_bools(&[true, false], buf).unwrap())
+                .pdu_len(),
+            8
+        );
+        // TODO: extend test
+    }
+
+    #[test]
+    fn test_response_pdu_len() {
+        let buf = &mut [0, 0];
+        assert_eq!(
+            Response::ReadCoils(Coils::from_bools(&[true], buf).unwrap()).pdu_len(),
+            4
+        );
+        // TODO: extend test
     }
 }
