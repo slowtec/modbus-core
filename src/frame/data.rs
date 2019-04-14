@@ -1,4 +1,5 @@
 use super::*;
+use crate::error::*;
 
 /// Modbus data (u16 values)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -8,6 +9,19 @@ pub struct Data<'d> {
 }
 
 impl<'d> Data<'d> {
+    /// Pack words (u16 values) into a byte buffer.
+    pub fn from_words(words: &[u16], target: &'d mut [u8]) -> Result<Self, Error> {
+        if words.len() * 2 > target.len() {
+            return Err(Error::BufferSize);
+        }
+        for (i, w) in words.iter().enumerate() {
+            BigEndian::write_u16(&mut target[i * 2..], *w);
+        }
+        Ok(Data {
+            data: target,
+            quantity: words.len(),
+        })
+    }
     /// Quantity of words (u16 values)
     pub const fn len(&self) -> usize {
         self.quantity
@@ -57,6 +71,21 @@ impl<'d> IntoIterator for Data<'d> {
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn from_word_slice() {
+        let words: &[u16] = &[0xABCD, 0xEF00, 0x1234];
+        let buff: &mut [u8] = &mut [0; 5];
+        assert!(Data::from_words(words, buff).is_err());
+        let buff: &mut [u8] = &mut [0; 6];
+        let data = Data::from_words(words, buff).unwrap();
+        assert_eq!(data.len(), 3);
+        let mut iter = data.into_iter();
+        assert_eq!(iter.next(), Some(0xABCD));
+        assert_eq!(iter.next(), Some(0xEF00));
+        assert_eq!(iter.next(), Some(0x1234));
+        assert_eq!(iter.next(), None);
+    }
 
     #[test]
     fn data_len() {

@@ -1,4 +1,5 @@
 use super::*;
+use crate::{error::*, util::*};
 
 /// Packed coils
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -8,6 +9,14 @@ pub struct Coils<'c> {
 }
 
 impl<'c> Coils<'c> {
+    /// Pack coils defined by an bool slice into a byte buffer.
+    pub fn from_bools(bools: &[bool], target: &'c mut [u8]) -> Result<Self, Error> {
+        pack_coils(bools, target)?;
+        Ok(Coils {
+            data: target,
+            quantity: bools.len(),
+        })
+    }
     /// Quantity of coils
     pub const fn len(&self) -> usize {
         self.quantity
@@ -59,6 +68,20 @@ impl<'c> IntoIterator for Coils<'c> {
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn from_bool_slice() {
+        let bools: &[bool] = &[true, false, true, true];
+        let buff: &mut [u8] = &mut [0];
+        let coils = Coils::from_bools(bools, buff).unwrap();
+        assert_eq!(coils.len(), 4);
+        let mut iter = coils.into_iter();
+        assert_eq!(iter.next(), Some(true));
+        assert_eq!(iter.next(), Some(false));
+        assert_eq!(iter.next(), Some(true));
+        assert_eq!(iter.next(), Some(true));
+        assert_eq!(iter.next(), None);
+    }
 
     #[test]
     fn coils_len() {
