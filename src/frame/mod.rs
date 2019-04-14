@@ -317,7 +317,7 @@ impl<'r> Request<'r> {
             | ReadHoldingRegisters(_, _)
             | WriteSingleRegister(_, _)
             | WriteSingleCoil(_, _) => 5,
-            WriteMultipleCoils(_, coils) => 6 + coils.data.len(),
+            WriteMultipleCoils(_, coils) => 6 + coils.packed_len(),
             WriteMultipleRegisters(_, words) => 6 + words.data.len(),
             ReadWriteMultipleRegisters(_, _, _, words) => 10 + words.data.len(),
             Custom(_, data) => 1 + data.len(),
@@ -331,7 +331,7 @@ impl<'r> Response<'r> {
     pub fn pdu_len(&self) -> usize {
         use Response::*;
         match *self {
-            ReadCoils(coils) | ReadDiscreteInputs(coils) => 2 + coils.data.len(),
+            ReadCoils(coils) | ReadDiscreteInputs(coils) => 2 + coils.packed_len(),
             WriteSingleCoil(_) => 3,
             WriteMultipleCoils(_, _) | WriteMultipleRegisters(_, _) | WriteSingleRegister(_, _) => {
                 5
@@ -473,7 +473,7 @@ mod tests {
         assert_eq!(
             Request::WriteMultipleCoils(0, Coils::from_bools(&[true, false], buf).unwrap())
                 .pdu_len(),
-            8
+            7
         );
         // TODO: extend test
     }
@@ -483,7 +483,7 @@ mod tests {
         let buf = &mut [0, 0];
         assert_eq!(
             Response::ReadCoils(Coils::from_bools(&[true], buf).unwrap()).pdu_len(),
-            4
+            3
         );
         // TODO: extend test
     }

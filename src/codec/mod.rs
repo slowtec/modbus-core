@@ -1,4 +1,4 @@
-use crate::{error::*, frame::*, util::*};
+use crate::{error::*, frame::*};
 use byteorder::{BigEndian, ByteOrder};
 use core::convert::TryFrom;
 
@@ -240,10 +240,8 @@ impl<'r> Encode for Request<'r> {
                 BigEndian::write_u16(&mut buf[1..], *address);
                 let len = coils.len();
                 BigEndian::write_u16(&mut buf[3..], len as u16);
-                buf[5] = coils.data.len() as u8;
-                for (idx, byte) in coils.data.iter().enumerate() {
-                    buf[idx + 6] = *byte;
-                }
+                buf[5] = coils.packed_len() as u8;
+                coils.copy_to(&mut buf[6..]);
             }
             WriteMultipleRegisters(address, words) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
@@ -285,18 +283,14 @@ impl<'r> Encode for Response<'r> {
         buf[0] = FnCode::from(*self).into();
         match self {
             ReadCoils(coils) | ReadDiscreteInputs(coils) => {
-                buf[1] = coils.data.len() as u8;
-                for (idx, c) in coils.data.iter().enumerate() {
-                    buf[2 + idx] = *c;
-                }
+                buf[1] = coils.packed_len() as u8;
+                coils.copy_to(&mut buf[2..]);
             }
             ReadInputRegisters(registers)
             | ReadHoldingRegisters(registers)
             | ReadWriteMultipleRegisters(registers) => {
-                buf[1] = registers.data.len() as u8;
-                for (idx, d) in registers.data.iter().enumerate() {
-                    buf[2 + idx] = *d;
-                }
+                buf[1] = (registers.len() * 2) as u8;
+                registers.copy_to(&mut buf[2..]);
             }
             WriteSingleCoil(address) => {
                 BigEndian::write_u16(&mut buf[1..], *address);

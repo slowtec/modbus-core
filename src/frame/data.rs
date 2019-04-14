@@ -22,6 +22,14 @@ impl<'d> Data<'d> {
             quantity: words.len(),
         })
     }
+    //TODO: add tests
+    pub(crate) fn copy_to(&self, buf: &mut [u8]) {
+        let cnt = self.quantity * 2;
+        debug_assert!(buf.len() >= cnt);
+        (0..cnt).for_each(|idx| {
+            buf[idx] = self.data[idx];
+        });
+    }
     /// Quantity of words (u16 values)
     pub const fn len(&self) -> usize {
         self.quantity
