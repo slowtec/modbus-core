@@ -3,10 +3,10 @@ mod data;
 pub(crate) mod rtu;
 pub(crate) mod tcp;
 
-pub use self::coils::*;
-pub use self::data::*;
+pub use self::{coils::*, data::*};
+use crate::error::*;
 use byteorder::{BigEndian, ByteOrder};
-use core::fmt;
+use core::{convert::TryFrom, fmt};
 
 /// A Modbus function code.
 ///

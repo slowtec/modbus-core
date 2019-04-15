@@ -1,0 +1,105 @@
+//! Modbus RTU server (slave) specific functions.
+use super::*;
+
+/// Decode an RTU request.
+pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
+    decode(DecoderType::Request, buf)
+        .and_then(|frame| {
+            if let Some((DecodedFrame { slave, pdu }, frame_pos)) = frame {
+                let hdr = Header { slave };
+                // Decoding of the PDU should are unlikely to fail due
+                // to transmission errors, because the frame's bytes
+                // have already been verified with the CRC.
+                Request::try_from(pdu)
+                    .map(|pdu| RequestPdu(pdu))
+                    .map(|pdu| Some(RequestAdu { hdr, pdu }))
+                    .map_err(|err| {
+                        // Unrecoverable error
+                        error!("Failed to decode request PDU: {}", err);
+                        err
+                    })
+            } else {
+                Ok(None)
+            }
+        })
+        .or_else(|_| {
+            // Decoding the transport frame is non-destructive and must
+            // never fail!
+            unreachable!();
+        })
+}
+
+/// Encode an RTU response.
+pub fn encode_response(adu: ResponseAdu, buf: &mut [u8]) -> Result<usize> {
+    let ResponseAdu { hdr, pdu } = adu;
+    if buf.len() < 2 {
+        return Err(Error::BufferSize);
+    }
+    let len = pdu.encode(&mut buf[1..])?;
+    if buf.len() < len + 3 {
+        return Err(Error::BufferSize);
+    }
+    buf[0] = hdr.slave;
+    let crc = crc16(&buf[0..len + 1]);
+    BigEndian::write_u16(&mut buf[len + 1..], crc);
+    Ok(len + 3)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_empty_request() {
+        let req = decode_request(&[]).unwrap();
+        assert!(req.is_none());
+    }
+
+    #[test]
+    fn decode_partly_received_request() {
+        let buf = &[
+            0x12, // slave address
+            0x16, // function code
+        ];
+        let req = decode_request(buf).unwrap();
+        assert!(req.is_none());
+    }
+
+    #[test]
+    fn decode_write_single_register_request() {
+        let buf = &[
+            0x12, // slave address
+            0x06, // function code
+            0x22, // addr
+            0x22, // addr
+            0xAB, // value
+            0xCD, // value
+            0x9F, // crc
+            0xBE, // crc
+        ];
+        let adu = decode_request(buf).unwrap().unwrap();
+        let RequestAdu { hdr, pdu } = adu;
+        let RequestPdu(pdu) = pdu;
+        assert_eq!(hdr.slave, 0x12);
+        assert_eq!(FnCode::from(pdu), FnCode::WriteSingleRegister);
+    }
+
+    #[test]
+    fn encode_write_single_register_response() {
+        let adu = ResponseAdu {
+            hdr: Header { slave: 0x12 },
+            pdu: ResponsePdu(Ok(Response::WriteSingleRegister(0x2222, 0xABCD))),
+        };
+        let buf = &mut [0; 100];
+        let len = encode_response(adu, buf).unwrap();
+        assert_eq!(len, 8);
+        assert_eq!(buf[0], 0x12);
+        assert_eq!(buf[1], 0x06);
+        assert_eq!(buf[2], 0x22);
+        assert_eq!(buf[3], 0x22);
+        assert_eq!(buf[4], 0xAB);
+        assert_eq!(buf[5], 0xCD);
+        assert_eq!(buf[6], 0x9F);
+        assert_eq!(buf[7], 0xBE);
+    }
+}

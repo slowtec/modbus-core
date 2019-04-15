@@ -212,12 +212,13 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
     }
 }
 
+/// Encode a struct into a buffer.
 pub trait Encode {
-    fn encode(&self, buf: &mut [u8]) -> Result<()>;
+    fn encode(&self, buf: &mut [u8]) -> Result<usize>;
 }
 
 impl<'r> Encode for Request<'r> {
-    fn encode(&self, buf: &mut [u8]) -> Result<()> {
+    fn encode(&self, buf: &mut [u8]) -> Result<usize> {
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
         }
@@ -270,12 +271,12 @@ impl<'r> Encode for Request<'r> {
             }
             _ => panic!(),
         }
-        Ok(())
+        Ok(self.pdu_len())
     }
 }
 
 impl<'r> Encode for Response<'r> {
-    fn encode(&self, buf: &mut [u8]) -> Result<()> {
+    fn encode(&self, buf: &mut [u8]) -> Result<usize> {
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
         }
@@ -311,7 +312,25 @@ impl<'r> Encode for Response<'r> {
                 unimplemented!()
             }
         }
-        Ok(())
+        Ok(self.pdu_len())
+    }
+}
+
+impl<'r> Encode for ResponsePdu<'r> {
+    fn encode(&self, buf: &mut [u8]) -> Result<usize> {
+        match self.0 {
+            Ok(res) => res.encode(buf),
+            Err(e) => e.encode(buf),
+        }
+    }
+}
+
+impl Encode for ExceptionResponse {
+    fn encode(&self, buf: &mut [u8]) -> Result<usize> {
+        let [code, ex]: [u8; 2] = (*self).into();
+        buf[0] = code;
+        buf[1] = ex;
+        Ok(2)
     }
 }
 

@@ -3,6 +3,7 @@
 use super::*;
 use byteorder::{BigEndian, ByteOrder};
 
+pub mod server;
 pub use crate::frame::rtu::*;
 
 // [MODBUS over Serial Line Specification and Implementation Guide V1.02](http://modbus.org/docs/Modbus_over_serial_line_V1_02.pdf), page 13
