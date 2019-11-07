@@ -135,7 +135,7 @@ pub fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
     }
     let fn_code = adu_buf[1];
     let len = match fn_code {
-        0x01...0x06 => Some(5),
+        0x01..=0x06 => Some(5),
         0x07 | 0x0B | 0x0C | 0x11 => Some(1),
         0x0F | 0x10 => {
             if adu_buf.len() > 4 {
@@ -169,7 +169,7 @@ pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
     }
     let fn_code = adu_buf[1];
     let len = match fn_code {
-        0x01...0x04 | 0x0C | 0x17 => {
+        0x01..=0x04 | 0x0C | 0x17 => {
             if adu_buf.len() > 2 {
                 Some(2 + adu_buf[2] as usize)
             } else {
@@ -188,7 +188,7 @@ pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
                 None
             }
         }
-        0x81...0xAB => Some(2),
+        0x81..=0xAB => Some(2),
         _ => return Err(Error::FnCode(fn_code)),
     };
     Ok(len)

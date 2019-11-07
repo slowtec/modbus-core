@@ -4,9 +4,8 @@ pub(crate) mod rtu;
 pub(crate) mod tcp;
 
 pub use self::{coils::*, data::*};
-use crate::error::*;
 use byteorder::{BigEndian, ByteOrder};
-use core::{convert::TryFrom, fmt};
+use core::fmt;
 
 /// A Modbus function code.
 ///
