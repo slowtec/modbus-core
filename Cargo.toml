@@ -5,8 +5,8 @@ version = "0.0.0"
 authors = ["slowtec GmbH", "Markus Kohlhase <markus.kohlhase@slowtec.de>"]
 license = "MIT/Apache-2.0"
 keywords = ["fieldbus", "modbus", "hardware", "automation"]
-homepage = "https://github.com/slowtec/tokio-modbus"
-repository = "https://github.com/slowtec/tokio-modbus"
+homepage = "https://github.com/slowtec/modbus-core"
+repository = "https://github.com/slowtec/modbus-core"
 edition = "2018"
 
 [dependencies]
