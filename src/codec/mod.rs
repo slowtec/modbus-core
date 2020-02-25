@@ -3,6 +3,7 @@ use byteorder::{BigEndian, ByteOrder};
 use core::convert::TryFrom;
 
 pub mod rtu;
+pub mod tcp;
 
 /// The type of decoding
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
