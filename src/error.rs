@@ -18,7 +18,7 @@ pub enum Error {
     /// Invalid byte count
     ByteCount(u8),
     /// Length Mismatch
-    LengthMismatch(usize,usize),
+    LengthMismatch(usize, usize),
     /// Protocol not Modbus
     ProtocolNotModbus(u16),
 }
@@ -39,14 +39,16 @@ impl fmt::Display for Error {
                 expected, actual
             ),
             ByteCount(cnt) => write!(f, "Invalid byte count: {}", cnt),
-            LengthMismatch(length_field, pdu_len) => write!(f,
+            LengthMismatch(length_field, pdu_len) => write!(
+                f,
                 "Length Mismatch: Length Field: {}, PDU Len + 1: {}",
                 length_field, pdu_len
             ),
-            ProtocolNotModbus(protocol_id) => write!(f,
+            ProtocolNotModbus(protocol_id) => write!(
+                f,
                 "Protocol not Modbus(0), recieved {} instead",
                 protocol_id
-            )
+            ),
         }
     }
 }

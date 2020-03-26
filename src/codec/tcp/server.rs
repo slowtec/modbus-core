@@ -5,8 +5,19 @@ use super::*;
 pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
     decode(DecoderType::Request, buf)
         .and_then(|frame| {
-            if let Some((DecodedFrame { transaction_id , unit_id, pdu }, _frame_pos)) = frame {
-                let hdr = Header { transaction_id, unit_id };
+            if let Some((
+                DecodedFrame {
+                    transaction_id,
+                    unit_id,
+                    pdu,
+                },
+                _frame_pos,
+            )) = frame
+            {
+                let hdr = Header {
+                    transaction_id,
+                    unit_id,
+                };
                 // Decoding of the PDU should are unlikely to fail due
                 // to transmission errors, because the frame's bytes
                 // have already been verified at the TCP level.
@@ -35,8 +46,8 @@ pub fn encode_response(adu: ResponseAdu, buf: &mut [u8]) -> Result<usize> {
     if buf.len() < 2 {
         return Err(Error::BufferSize);
     }
-    BigEndian::write_u16(&mut buf[0..2],hdr.transaction_id);
-    BigEndian::write_u16(&mut buf[2..4],0); //MODBUS Protocol
+    BigEndian::write_u16(&mut buf[0..2], hdr.transaction_id);
+    BigEndian::write_u16(&mut buf[2..4], 0); //MODBUS Protocol
     buf[6] = hdr.unit_id;
     let len = pdu.encode(&mut buf[7..])?;
     if buf.len() < len + 7 {
@@ -61,7 +72,7 @@ mod tests {
     fn decode_partly_received_request() {
         let buf = &[
             0x00, // garbage
-            0x01, // 
+            0x01, //
         ];
         let req = decode_request(buf).unwrap();
         assert!(req.is_none());
@@ -110,11 +121,13 @@ mod tests {
         assert!(decode_request(buf).unwrap().is_none());
     }
 
-
     #[test]
     fn encode_write_single_register_response() {
         let adu = ResponseAdu {
-            hdr: Header { transaction_id: 42, unit_id: 0x12 },
+            hdr: Header {
+                transaction_id: 42,
+                unit_id: 0x12,
+            },
             pdu: ResponsePdu(Ok(Response::WriteSingleRegister(0x2222, 0xABCD))),
         };
         let buf = &mut [0; 100];

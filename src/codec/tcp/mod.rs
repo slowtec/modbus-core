@@ -106,7 +106,7 @@ pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>>
         let m_length = BigEndian::read_u16(&length_buf) as usize;
         let unit = adu_buf[0];
         if m_length != pdu_len + 1 {
-            return Err(Error::LengthMismatch(m_length,pdu_len + 1));
+            return Err(Error::LengthMismatch(m_length, pdu_len + 1));
         }
         return Ok(Some(DecodedFrame {
             transaction_id: transaction,
@@ -187,7 +187,7 @@ pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_request_pdu_len() {
         let buf = &mut [0x66, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -365,7 +365,11 @@ mod tests {
                 0x03, // -- start of next frame
             ];
             let pdu_len = response_pdu_len(buf).unwrap().unwrap();
-            let DecodedFrame { transaction_id, unit_id, pdu } = extract_frame(buf, pdu_len).unwrap().unwrap();
+            let DecodedFrame {
+                transaction_id,
+                unit_id,
+                pdu,
+            } = extract_frame(buf, pdu_len).unwrap().unwrap();
             assert_eq!(transaction_id, 258);
             assert_eq!(unit_id, 0x01);
             assert_eq!(pdu.len(), 6);
