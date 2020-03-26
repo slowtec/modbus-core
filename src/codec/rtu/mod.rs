@@ -125,7 +125,7 @@ pub fn crc16(data: &[u8]) -> u16 {
             }
         }
     }
-    (crc << 8 | crc >> 8)
+    crc << 8 | crc >> 8
 }
 
 /// Extract the PDU length out of the ADU request buffer.
