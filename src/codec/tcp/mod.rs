@@ -129,7 +129,7 @@ pub fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
         0x07 | 0x0B | 0x0C | 0x11 => Some(1),
         0x0F | 0x10 => {
             if adu_buf.len() > 10 {
-                Some(6 + adu_buf[10] as usize)
+                Some(6 + adu_buf[12] as usize)
             } else {
                 // incomplete frame
                 None
@@ -223,11 +223,11 @@ mod tests {
         assert_eq!(request_pdu_len(buf).unwrap(), Some(1));
 
         buf[7] = 0x0F;
-        buf[10] = 99;
+        buf[12] = 99;
         assert_eq!(request_pdu_len(buf).unwrap(), Some(105));
 
         buf[7] = 0x10;
-        buf[10] = 99;
+        buf[12] = 99;
         assert_eq!(request_pdu_len(buf).unwrap(), Some(105));
 
         buf[7] = 0x11;
