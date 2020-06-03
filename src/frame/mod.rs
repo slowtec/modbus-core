@@ -102,6 +102,7 @@ impl Into<u8> for FnCode {
 }
 
 /// A Modbus sub-function code is represented by an unsigned 16 bit integer.
+#[cfg(feature = "rtu")]
 pub(crate) type SubFnCode = u16;
 
 /// A Modbus address is represented by 16 bit (from `0` to `65535`).
@@ -320,6 +321,7 @@ impl<'r> Request<'r> {
             WriteMultipleRegisters(_, words) => 6 + words.data.len(),
             ReadWriteMultipleRegisters(_, _, _, words) => 10 + words.data.len(),
             Custom(_, data) => 1 + data.len(),
+            #[cfg(feature = "rtu")]
             _ => unimplemented!(), // TODO
         }
     }
@@ -339,6 +341,7 @@ impl<'r> Response<'r> {
             | ReadHoldingRegisters(words)
             | ReadWriteMultipleRegisters(words) => 2 + words.data.len(),
             Custom(_, data) => 1 + data.len(),
+            #[cfg(feature = "rtu")]
             _ => unimplemented!(), // TODO
         }
     }
