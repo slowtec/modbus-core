@@ -33,9 +33,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
                 Ok(None)
             }
         })
-        .or_else(|error| {
-            Err(error)
-        })
+        .or_else(|error| Err(error))
 }
 
 /// Encode an TCP response.
