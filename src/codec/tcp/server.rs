@@ -33,11 +33,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
                 Ok(None)
             }
         })
-        .or_else(|_| {
-            // Decoding the transport frame is non-destructive and must
-            // never fail!
-            unreachable!();
-        })
+        .or_else(|error| Err(error))
 }
 
 /// Encode an TCP response.

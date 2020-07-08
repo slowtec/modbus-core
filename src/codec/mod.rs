@@ -270,6 +270,7 @@ impl<'r> Encode for Request<'r> {
                     buf[idx + 1] = *d;
                 });
             }
+            #[cfg(feature = "rtu")]
             _ => panic!(),
         }
         Ok(self.pdu_len())
@@ -308,6 +309,7 @@ impl<'r> Encode for Response<'r> {
                     buf[idx + 1] = *d;
                 }
             }
+            #[cfg(feature = "rtu")]
             _ => {
                 // TODO:
                 unimplemented!()
