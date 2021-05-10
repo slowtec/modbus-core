@@ -37,7 +37,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
 /// Encode an TCP response.
 pub fn encode_response(adu: ResponseAdu, buf: &mut [u8]) -> Result<usize> {
     let ResponseAdu { hdr, pdu } = adu;
-    if buf.len() < 2 {
+    if buf.len() < 7 {
         return Err(Error::BufferSize);
     }
     BigEndian::write_u16(&mut buf[0..2], hdr.transaction_id);
