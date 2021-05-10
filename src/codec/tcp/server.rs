@@ -52,6 +52,23 @@ pub fn encode_response(adu: ResponseAdu, buf: &mut [u8]) -> Result<usize> {
     Ok(len + 7)
 }
 
+pub fn encode_request(adu: RequestAdu, buf: &mut [u8]) -> Result<usize> {
+    let RequestAdu { hdr, pdu } = adu;
+    if buf.len() < 7 {
+        return Err(Error::BufferSize);
+    }
+    BigEndian::write_u16(&mut buf[0..2], hdr.transaction_id);
+    BigEndian::write_u16(&mut buf[2..4], 0); //MODBUS Protocol
+    buf[6] = hdr.unit_id;
+    let len = pdu.encode(&mut buf[7..])?;
+    if buf.len() < len + 7 {
+        return Err(Error::BufferSize);
+    }
+    BigEndian::write_u16(&mut buf[4..6], (len + 1) as u16);
+
+    Ok(len + 7)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,5 +156,33 @@ mod tests {
         assert_eq!(buf[9], 0x22);
         assert_eq!(buf[10], 0xAB);
         assert_eq!(buf[11], 0xCD);
+    }
+
+    #[test]
+    fn response_buffer_too_small() {
+        let adu = ResponseAdu {
+            hdr: Header {
+                transaction_id: 42,
+                unit_id: 0x12,
+            },
+            pdu: ResponsePdu(Ok(Response::WriteSingleRegister(0x2222, 0xABCD))),
+        };
+        let buf = &mut [0; 11];
+        let res = encode_response(adu, buf).err().unwrap();
+        assert_eq!(res, Error::BufferSize);
+    }
+
+    #[test]
+    fn request_buffer_too_small() {
+        let adu = RequestAdu {
+            hdr: Header {
+                transaction_id: 42,
+                unit_id: 0x12,
+            },
+            pdu: RequestPdu(Request::WriteSingleRegister(0x2222, 0xABCD)),
+        };
+        let buf = &mut [0; 11];
+        let res = encode_request(adu, buf).err().unwrap();
+        assert_eq!(res, Error::BufferSize);
     }
 }
