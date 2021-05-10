@@ -319,6 +319,12 @@ impl<'r> Encode for Response<'r> {
     }
 }
 
+impl<'r> Encode for RequestPdu<'r> {
+    fn encode(&self, buf: &mut [u8]) -> Result<usize> {
+        self.0.encode(buf)
+    }
+}
+
 impl<'r> Encode for ResponsePdu<'r> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
         match self.0 {
