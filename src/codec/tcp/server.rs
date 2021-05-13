@@ -34,6 +34,48 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
     })
 }
 
+// Decode a TCP response
+pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
+    decode(DecoderType::Response, buf)
+        .and_then(|frame| {
+            if let Some((
+                DecodedFrame {
+                    transaction_id,
+                    unit_id,
+                    pdu,
+                },
+                _frame_pos,
+            )) = frame
+            {
+                let hdr = Header {
+                    transaction_id,
+                    unit_id,
+                };
+                // Decoding of the PDU should are unlikely to fail due
+                // to transmission errors, because the frame's bytes
+                // have already been verified at the TCP level.
+
+                Response::try_from(pdu)
+                    .map(Ok)
+                    .or_else(|_| ExceptionResponse::try_from(pdu).map(Err))
+                    .map(ResponsePdu)
+                    .map(|pdu| Some(ResponseAdu { hdr, pdu }))
+                    .map_err(|err| {
+                        // Unrecoverable error
+                        error!("Failed to decode response PDU: {}", err);
+                        err
+                    })
+            } else {
+                Ok(None)
+            }
+        })
+        .or_else(|_| {
+            // Decoding the transport frame is non-destructive and must
+            // never fail!
+            unreachable!();
+        })
+}
+
 /// Encode an TCP response.
 pub fn encode_response(adu: ResponseAdu, buf: &mut [u8]) -> Result<usize> {
     let ResponseAdu { hdr, pdu } = adu;
