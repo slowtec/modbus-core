@@ -339,7 +339,7 @@ impl<'r> Response<'r> {
             }
             ReadInputRegisters(words)
             | ReadHoldingRegisters(words)
-            | ReadWriteMultipleRegisters(words) => 2 + words.data.len(),
+            | ReadWriteMultipleRegisters(words) => 2 + words.len(),
             Custom(_, data) => 1 + data.len(),
             #[cfg(feature = "rtu")]
             _ => unimplemented!(), // TODO
