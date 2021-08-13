@@ -4,8 +4,8 @@ A no-std Rust modbus library.
 
 [![Crates.io version](https://img.shields.io/crates/v/modbus-core.svg)](https://crates.io/crates/modbus-core)
 [![Docs](https://docs.rs/modbus-core/badge.svg)](https://docs.rs/modbus-core/)
-[![Build Status](https://travis-ci.org/slowtec/modbus-core.svg?branch=master)](https://travis-ci.org/slowtec/modbus-core)
-[![Coverage Status](https://coveralls.io/repos/github/slowtec/modbus-core/badge.svg?branch=master)](https://coveralls.io/github/slowtec/modbus-core?branch=master)
+[![Security audit](https://github.com/slowtec/modbus-core/actions/workflows/security_audit.yaml/badge.svg)](https://github.com/slowtec/modbus-core/actions/workflows/security_audit.yaml)
+[![Continuous integration](https://github.com/slowtec/modbus-core/actions/workflows/continuous_integration.yaml/badge.svg)](https://github.com/slowtec/modbus-core/actions/workflows/continuous_integration.yaml)
 
 ## Installation
 
