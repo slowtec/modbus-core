@@ -32,6 +32,6 @@ modbus-core = { version = "*", default-features = false, features = ["rtu"] }
 
 ## License
 
-Copyright 2018-2019 [slowtec GmbH](https://www.slowtec.de)
+Copyright 2018-2021 [slowtec GmbH](https://www.slowtec.de)
 
 MIT/Apache-2.0
