@@ -1,0 +1,56 @@
+name: Continuous integration
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner_os }}
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-apple-darwin
+          - x86_64-pc-windows-msvc
+        include:
+          - target:  x86_64-unknown-linux-gnu
+            runner_os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            runner_os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            runner_os: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+
+      - name: Test workspace with all features enabled
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --all-features
+
+      - name: Build workspace documentation with all features enabled
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --workspace --all-features
+
+      - name: Build workspace in release mode with default features
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --workspace --release
