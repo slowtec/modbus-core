@@ -98,12 +98,12 @@ pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>>
         let (transaction_buf, adu_buf) = adu_buf.split_at(2);
         let (protocol_buf, adu_buf) = adu_buf.split_at(2);
         let (length_buf, adu_buf) = adu_buf.split_at(2);
-        let protocol_id = BigEndian::read_u16(&protocol_buf);
+        let protocol_id = BigEndian::read_u16(protocol_buf);
         if protocol_id != 0 {
             return Err(Error::ProtocolNotModbus(protocol_id));
         }
-        let transaction = BigEndian::read_u16(&transaction_buf);
-        let m_length = BigEndian::read_u16(&length_buf) as usize;
+        let transaction = BigEndian::read_u16(transaction_buf);
+        let m_length = BigEndian::read_u16(length_buf) as usize;
         let unit = adu_buf[0];
         if m_length != pdu_len + 1 {
             return Err(Error::LengthMismatch(m_length, pdu_len + 1));

@@ -72,11 +72,11 @@ impl From<u8> for FnCode {
     }
 }
 
-impl Into<u8> for FnCode {
-    fn into(self: Self) -> u8 {
+impl From<FnCode> for u8 {
+    fn from(code: FnCode) -> Self {
         use FnCode::*;
 
-        match self {
+        match code {
             ReadCoils => 0x01,
             ReadDiscreteInputs => 0x02,
             WriteSingleCoil => 0x05,

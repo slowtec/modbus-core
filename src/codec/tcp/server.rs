@@ -3,37 +3,35 @@ use super::*;
 
 /// Decode an TCP request.
 pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
-    decode(DecoderType::Request, buf)
-        .and_then(|frame| {
-            if let Some((
-                DecodedFrame {
-                    transaction_id,
-                    unit_id,
-                    pdu,
-                },
-                _frame_pos,
-            )) = frame
-            {
-                let hdr = Header {
-                    transaction_id,
-                    unit_id,
-                };
-                // Decoding of the PDU should are unlikely to fail due
-                // to transmission errors, because the frame's bytes
-                // have already been verified at the TCP level.
-                Request::try_from(pdu)
-                    .map(RequestPdu)
-                    .map(|pdu| Some(RequestAdu { hdr, pdu }))
-                    .map_err(|err| {
-                        // Unrecoverable error
-                        error!("Failed to decode request PDU: {}", err);
-                        err
-                    })
-            } else {
-                Ok(None)
-            }
-        })
-        .or_else(|error| Err(error))
+    decode(DecoderType::Request, buf).and_then(|frame| {
+        if let Some((
+            DecodedFrame {
+                transaction_id,
+                unit_id,
+                pdu,
+            },
+            _frame_pos,
+        )) = frame
+        {
+            let hdr = Header {
+                transaction_id,
+                unit_id,
+            };
+            // Decoding of the PDU should are unlikely to fail due
+            // to transmission errors, because the frame's bytes
+            // have already been verified at the TCP level.
+            Request::try_from(pdu)
+                .map(RequestPdu)
+                .map(|pdu| Some(RequestAdu { hdr, pdu }))
+                .map_err(|err| {
+                    // Unrecoverable error
+                    error!("Failed to decode request PDU: {}", err);
+                    err
+                })
+        } else {
+            Ok(None)
+        }
+    })
 }
 
 /// Encode an TCP response.

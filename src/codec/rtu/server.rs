@@ -22,7 +22,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
                 Ok(None)
             }
         })
-        .or_else(|_| {
+        .map_err(|_| {
             // Decoding the transport frame is non-destructive and must
             // never fail!
             unreachable!();
