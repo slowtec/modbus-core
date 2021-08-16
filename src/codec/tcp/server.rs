@@ -69,7 +69,7 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
                 Ok(None)
             }
         })
-        .or_else(|_| {
+        .map_err(|_| {
             // Decoding the transport frame is non-destructive and must
             // never fail!
             unreachable!();
