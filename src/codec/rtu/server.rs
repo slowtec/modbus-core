@@ -45,6 +45,21 @@ pub fn encode_response(adu: ResponseAdu, buf: &mut [u8]) -> Result<usize> {
     Ok(len + 3)
 }
 
+pub fn encode_request(adu: RequestAdu, buf: &mut [u8]) -> Result<usize> {
+    let RequestAdu { hdr, pdu } = adu;
+    if buf.len() < 2 {
+        return Err(Error::BufferSize);
+    }
+    let len = pdu.encode(&mut buf[1..])?;
+    if buf.len() < len + 3 {
+        return Err(Error::BufferSize);
+    }
+    buf[0] = hdr.slave;
+    let crc = crc16(&buf[0..=len]);
+    BigEndian::write_u16(&mut buf[len + 1..], crc);
+    Ok(len + 3)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
