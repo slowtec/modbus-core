@@ -45,58 +45,54 @@ pub enum FnCode {
 
 impl From<u8> for FnCode {
     fn from(c: u8) -> Self {
-        use FnCode::*;
-
         match c {
-            0x01 => ReadCoils,
-            0x02 => ReadDiscreteInputs,
-            0x05 => WriteSingleCoil,
-            0x0F => WriteMultipleCoils,
-            0x04 => ReadInputRegisters,
-            0x03 => ReadHoldingRegisters,
-            0x06 => WriteSingleRegister,
-            0x10 => WriteMultipleRegisters,
-            0x17 => ReadWriteMultipleRegisters,
+            0x01 => Self::ReadCoils,
+            0x02 => Self::ReadDiscreteInputs,
+            0x05 => Self::WriteSingleCoil,
+            0x0F => Self::WriteMultipleCoils,
+            0x04 => Self::ReadInputRegisters,
+            0x03 => Self::ReadHoldingRegisters,
+            0x06 => Self::WriteSingleRegister,
+            0x10 => Self::WriteMultipleRegisters,
+            0x17 => Self::ReadWriteMultipleRegisters,
             #[cfg(feature = "rtu")]
-            0x07 => ReadExceptionStatus,
+            0x07 => Self::ReadExceptionStatus,
             #[cfg(feature = "rtu")]
-            0x08 => Diagnostics,
+            0x08 => Self::Diagnostics,
             #[cfg(feature = "rtu")]
-            0x0B => GetCommEventCounter,
+            0x0B => Self::GetCommEventCounter,
             #[cfg(feature = "rtu")]
-            0x0C => GetCommEventLog,
+            0x0C => Self::GetCommEventLog,
             #[cfg(feature = "rtu")]
-            0x11 => ReportServerId,
-            _ => Custom(c),
+            0x11 => Self::ReportServerId,
+            _ => Self::Custom(c),
         }
     }
 }
 
 impl From<FnCode> for u8 {
     fn from(code: FnCode) -> Self {
-        use FnCode::*;
-
         match code {
-            ReadCoils => 0x01,
-            ReadDiscreteInputs => 0x02,
-            WriteSingleCoil => 0x05,
-            WriteMultipleCoils => 0x0F,
-            ReadInputRegisters => 0x04,
-            ReadHoldingRegisters => 0x03,
-            WriteSingleRegister => 0x06,
-            WriteMultipleRegisters => 0x10,
-            ReadWriteMultipleRegisters => 0x17,
+            FnCode::ReadCoils => 0x01,
+            FnCode::ReadDiscreteInputs => 0x02,
+            FnCode::WriteSingleCoil => 0x05,
+            FnCode::WriteMultipleCoils => 0x0F,
+            FnCode::ReadInputRegisters => 0x04,
+            FnCode::ReadHoldingRegisters => 0x03,
+            FnCode::WriteSingleRegister => 0x06,
+            FnCode::WriteMultipleRegisters => 0x10,
+            FnCode::ReadWriteMultipleRegisters => 0x17,
             #[cfg(feature = "rtu")]
-            ReadExceptionStatus => 0x07,
+            FnCode::ReadExceptionStatus => 0x07,
             #[cfg(feature = "rtu")]
-            Diagnostics => 0x08,
+            FnCode::Diagnostics => 0x08,
             #[cfg(feature = "rtu")]
-            GetCommEventCounter => 0x0B,
+            FnCode::GetCommEventCounter => 0x0B,
             #[cfg(feature = "rtu")]
-            GetCommEventLog => 0x0C,
+            FnCode::GetCommEventLog => 0x0C,
             #[cfg(feature = "rtu")]
-            ReportServerId => 0x11,
-            Custom(c) => c,
+            FnCode::ReportServerId => 0x11,
+            FnCode::Custom(c) => c,
         }
     }
 }
@@ -215,60 +211,58 @@ pub enum Response<'r> {
 
 impl<'r> From<Request<'r>> for FnCode {
     fn from(r: Request<'r>) -> Self {
-        use FnCode as c;
-        use Request::*;
+        use Request as R;
 
         match r {
-            ReadCoils(_, _) => c::ReadCoils,
-            ReadDiscreteInputs(_, _) => c::ReadDiscreteInputs,
-            WriteSingleCoil(_, _) => c::WriteSingleCoil,
-            WriteMultipleCoils(_, _) => c::WriteMultipleCoils,
-            ReadInputRegisters(_, _) => c::ReadInputRegisters,
-            ReadHoldingRegisters(_, _) => c::ReadHoldingRegisters,
-            WriteSingleRegister(_, _) => c::WriteSingleRegister,
-            WriteMultipleRegisters(_, _) => c::WriteMultipleRegisters,
-            ReadWriteMultipleRegisters(_, _, _, _) => c::ReadWriteMultipleRegisters,
+            R::ReadCoils(_, _) => Self::ReadCoils,
+            R::ReadDiscreteInputs(_, _) => Self::ReadDiscreteInputs,
+            R::WriteSingleCoil(_, _) => Self::WriteSingleCoil,
+            R::WriteMultipleCoils(_, _) => Self::WriteMultipleCoils,
+            R::ReadInputRegisters(_, _) => Self::ReadInputRegisters,
+            R::ReadHoldingRegisters(_, _) => Self::ReadHoldingRegisters,
+            R::WriteSingleRegister(_, _) => Self::WriteSingleRegister,
+            R::WriteMultipleRegisters(_, _) => Self::WriteMultipleRegisters,
+            R::ReadWriteMultipleRegisters(_, _, _, _) => Self::ReadWriteMultipleRegisters,
             #[cfg(feature = "rtu")]
-            ReadExceptionStatus => c::ReadExceptionStatus,
+            R::ReadExceptionStatus => Self::ReadExceptionStatus,
             #[cfg(feature = "rtu")]
-            Diagnostics(_, _) => c::Diagnostics,
+            R::Diagnostics(_, _) => Self::Diagnostics,
             #[cfg(feature = "rtu")]
-            GetCommEventCounter => c::GetCommEventCounter,
+            R::GetCommEventCounter => Self::GetCommEventCounter,
             #[cfg(feature = "rtu")]
-            GetCommEventLog => c::GetCommEventLog,
+            R::GetCommEventLog => Self::GetCommEventLog,
             #[cfg(feature = "rtu")]
-            ReportServerId => c::ReportServerId,
-            Custom(code, _) => code,
+            R::ReportServerId => Self::ReportServerId,
+            R::Custom(code, _) => code,
         }
     }
 }
 
 impl<'r> From<Response<'r>> for FnCode {
     fn from(r: Response<'r>) -> Self {
-        use FnCode as c;
-        use Response::*;
+        use Response as R;
 
         match r {
-            ReadCoils(_) => c::ReadCoils,
-            ReadDiscreteInputs(_) => c::ReadDiscreteInputs,
-            WriteSingleCoil(_) => c::WriteSingleCoil,
-            WriteMultipleCoils(_, _) => c::WriteMultipleCoils,
-            ReadInputRegisters(_) => c::ReadInputRegisters,
-            ReadHoldingRegisters(_) => c::ReadHoldingRegisters,
-            WriteSingleRegister(_, _) => c::WriteSingleRegister,
-            WriteMultipleRegisters(_, _) => c::WriteMultipleRegisters,
-            ReadWriteMultipleRegisters(_) => c::ReadWriteMultipleRegisters,
+            R::ReadCoils(_) => Self::ReadCoils,
+            R::ReadDiscreteInputs(_) => Self::ReadDiscreteInputs,
+            R::WriteSingleCoil(_) => Self::WriteSingleCoil,
+            R::WriteMultipleCoils(_, _) => Self::WriteMultipleCoils,
+            R::ReadInputRegisters(_) => Self::ReadInputRegisters,
+            R::ReadHoldingRegisters(_) => Self::ReadHoldingRegisters,
+            R::WriteSingleRegister(_, _) => Self::WriteSingleRegister,
+            R::WriteMultipleRegisters(_, _) => Self::WriteMultipleRegisters,
+            R::ReadWriteMultipleRegisters(_) => Self::ReadWriteMultipleRegisters,
             #[cfg(feature = "rtu")]
-            ReadExceptionStatus(_) => c::ReadExceptionStatus,
+            R::ReadExceptionStatus(_) => Self::ReadExceptionStatus,
             #[cfg(feature = "rtu")]
-            Diagnostics(_) => c::Diagnostics,
+            R::Diagnostics(_) => Self::Diagnostics,
             #[cfg(feature = "rtu")]
-            GetCommEventCounter(_, _) => c::GetCommEventCounter,
+            R::GetCommEventCounter(_, _) => Self::GetCommEventCounter,
             #[cfg(feature = "rtu")]
-            GetCommEventLog(_, _, _, _) => c::GetCommEventLog,
+            R::GetCommEventLog(_, _, _, _) => Self::GetCommEventLog,
             #[cfg(feature = "rtu")]
-            ReportServerId(_, _) => c::ReportServerId,
-            Custom(code, _) => code,
+            R::ReportServerId(_, _) => Self::ReportServerId,
+            R::Custom(code, _) => code,
         }
     }
 }
@@ -289,18 +283,16 @@ pub enum Exception {
 
 impl fmt::Display for Exception {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Exception::*;
-
         let desc = match *self {
-            IllegalFunction => "Illegal function",
-            IllegalDataAddress => "Illegal data address",
-            IllegalDataValue => "Illegal data value",
-            ServerDeviceFailure => "Server device failure",
-            Acknowledge => "Acknowledge",
-            ServerDeviceBusy => "Server device busy",
-            MemoryParityError => "Memory parity error",
-            GatewayPathUnavailable => "Gateway path unavailable",
-            GatewayTargetDevice => "Gateway target device failed to respond",
+            Self::IllegalFunction => "Illegal function",
+            Self::IllegalDataAddress => "Illegal data address",
+            Self::IllegalDataValue => "Illegal data value",
+            Self::ServerDeviceFailure => "Server device failure",
+            Self::Acknowledge => "Acknowledge",
+            Self::ServerDeviceBusy => "Server device busy",
+            Self::MemoryParityError => "Memory parity error",
+            Self::GatewayPathUnavailable => "Gateway path unavailable",
+            Self::GatewayTargetDevice => "Gateway target device failed to respond",
         };
         write!(f, "{desc}")
     }
@@ -310,20 +302,19 @@ impl<'r> Request<'r> {
     /// Number of bytes required for a serialized PDU frame.
     #[must_use]
     pub fn pdu_len(&self) -> usize {
-        use Request::*;
         match *self {
-            ReadCoils(_, _)
-            | ReadDiscreteInputs(_, _)
-            | ReadInputRegisters(_, _)
-            | ReadHoldingRegisters(_, _)
-            | WriteSingleRegister(_, _)
-            | WriteSingleCoil(_, _) => 5,
-            WriteMultipleCoils(_, coils) => 6 + coils.packed_len(),
-            WriteMultipleRegisters(_, words) => 6 + words.data.len(),
-            ReadWriteMultipleRegisters(_, _, _, words) => 10 + words.data.len(),
-            Custom(_, data) => 1 + data.len(),
+            Self::ReadCoils(_, _)
+            | Self::ReadDiscreteInputs(_, _)
+            | Self::ReadInputRegisters(_, _)
+            | Self::ReadHoldingRegisters(_, _)
+            | Self::WriteSingleRegister(_, _)
+            | Self::WriteSingleCoil(_, _) => 5,
+            Self::WriteMultipleCoils(_, coils) => 6 + coils.packed_len(),
+            Self::WriteMultipleRegisters(_, words) => 6 + words.data.len(),
+            Self::ReadWriteMultipleRegisters(_, _, _, words) => 10 + words.data.len(),
+            Self::Custom(_, data) => 1 + data.len(),
             #[cfg(feature = "rtu")]
-            _ => unimplemented!(), // TODO
+            _ => todo!(), // TODO
         }
     }
 }
@@ -332,17 +323,16 @@ impl<'r> Response<'r> {
     /// Number of bytes required for a serialized PDU frame.
     #[must_use]
     pub fn pdu_len(&self) -> usize {
-        use Response::*;
         match *self {
-            ReadCoils(coils) | ReadDiscreteInputs(coils) => 2 + coils.packed_len(),
-            WriteSingleCoil(_) => 3,
-            WriteMultipleCoils(_, _) | WriteMultipleRegisters(_, _) | WriteSingleRegister(_, _) => {
-                5
-            }
-            ReadInputRegisters(words)
-            | ReadHoldingRegisters(words)
-            | ReadWriteMultipleRegisters(words) => 2 + words.len() * 2,
-            Custom(_, data) => 1 + data.len(),
+            Self::ReadCoils(coils) | Self::ReadDiscreteInputs(coils) => 2 + coils.packed_len(),
+            Self::WriteSingleCoil(_) => 3,
+            Self::WriteMultipleCoils(_, _)
+            | Self::WriteMultipleRegisters(_, _)
+            | Self::WriteSingleRegister(_, _) => 5,
+            Self::ReadInputRegisters(words)
+            | Self::ReadHoldingRegisters(words)
+            | Self::ReadWriteMultipleRegisters(words) => 2 + words.len() * 2,
+            Self::Custom(_, data) => 1 + data.len(),
             #[cfg(feature = "rtu")]
             _ => unimplemented!(), // TODO
         }

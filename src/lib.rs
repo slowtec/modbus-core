@@ -9,9 +9,10 @@
 #![warn(unused)]
 // Clippy lints
 #![warn(clippy::pedantic)]
-#![allow(clippy::enum_glob_use)]
+#![allow(clippy::cast_possible_truncation)] // FIXME
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
+#![allow(clippy::similar_names)] // TODO
 #![allow(clippy::wildcard_imports)]
 
 mod codec;

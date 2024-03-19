@@ -1,6 +1,5 @@
 use crate::{error::*, frame::*};
 use byteorder::{BigEndian, ByteOrder};
-use core::convert::TryFrom;
 
 pub mod rtu;
 pub mod tcp;
@@ -18,17 +17,16 @@ impl TryFrom<u8> for Exception {
     type Error = Error;
 
     fn try_from(code: u8) -> Result<Self> {
-        use crate::frame::Exception::*;
         let ex = match code {
-            0x01 => IllegalFunction,
-            0x02 => IllegalDataAddress,
-            0x03 => IllegalDataValue,
-            0x04 => ServerDeviceFailure,
-            0x05 => Acknowledge,
-            0x06 => ServerDeviceBusy,
-            0x08 => MemoryParityError,
-            0x0A => GatewayPathUnavailable,
-            0x0B => GatewayTargetDevice,
+            0x01 => Self::IllegalFunction,
+            0x02 => Self::IllegalDataAddress,
+            0x03 => Self::IllegalDataValue,
+            0x04 => Self::ServerDeviceFailure,
+            0x05 => Self::Acknowledge,
+            0x06 => Self::ServerDeviceBusy,
+            0x08 => Self::MemoryParityError,
+            0x0A => Self::GatewayPathUnavailable,
+            0x0B => Self::GatewayTargetDevice,
             _ => {
                 return Err(Error::ExceptionCode(code));
             }
@@ -69,6 +67,8 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
     type Error = Error;
 
     fn try_from(bytes: &'r [u8]) -> Result<Self> {
+        use FnCode as F;
+
         if bytes.is_empty() {
             return Err(Error::BufferSize);
         }
@@ -79,32 +79,29 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
             return Err(Error::BufferSize);
         }
 
-        use crate::frame::Request::*;
-        use FnCode as f;
-
         let req = match FnCode::from(fn_code) {
-            f::ReadCoils
-            | f::ReadDiscreteInputs
-            | f::ReadInputRegisters
-            | f::ReadHoldingRegisters
-            | f::WriteSingleRegister => {
+            F::ReadCoils
+            | F::ReadDiscreteInputs
+            | F::ReadInputRegisters
+            | F::ReadHoldingRegisters
+            | F::WriteSingleRegister => {
                 let addr = BigEndian::read_u16(&bytes[1..3]);
                 let quantity = BigEndian::read_u16(&bytes[3..5]);
 
                 match FnCode::from(fn_code) {
-                    f::ReadCoils => ReadCoils(addr, quantity),
-                    f::ReadDiscreteInputs => ReadDiscreteInputs(addr, quantity),
-                    f::ReadInputRegisters => ReadInputRegisters(addr, quantity),
-                    f::ReadHoldingRegisters => ReadHoldingRegisters(addr, quantity),
-                    f::WriteSingleRegister => WriteSingleRegister(addr, quantity),
+                    F::ReadCoils => Self::ReadCoils(addr, quantity),
+                    F::ReadDiscreteInputs => Self::ReadDiscreteInputs(addr, quantity),
+                    F::ReadInputRegisters => Self::ReadInputRegisters(addr, quantity),
+                    F::ReadHoldingRegisters => Self::ReadHoldingRegisters(addr, quantity),
+                    F::WriteSingleRegister => Self::WriteSingleRegister(addr, quantity),
                     _ => unreachable!(),
                 }
             }
-            f::WriteSingleCoil => WriteSingleCoil(
+            F::WriteSingleCoil => Self::WriteSingleCoil(
                 BigEndian::read_u16(&bytes[1..3]),
                 u16_coil_to_bool(BigEndian::read_u16(&bytes[3..5]))?,
             ),
-            f::WriteMultipleCoils => {
+            F::WriteMultipleCoils => {
                 let address = BigEndian::read_u16(&bytes[1..3]);
                 let quantity = BigEndian::read_u16(&bytes[3..5]) as usize;
                 let byte_count = bytes[5];
@@ -113,9 +110,9 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
                 }
                 let data = &bytes[6..];
                 let coils = Coils { data, quantity };
-                WriteMultipleCoils(address, coils)
+                Self::WriteMultipleCoils(address, coils)
             }
-            f::WriteMultipleRegisters => {
+            F::WriteMultipleRegisters => {
                 let address = BigEndian::read_u16(&bytes[1..3]);
                 let quantity = BigEndian::read_u16(&bytes[3..5]) as usize;
                 let byte_count = bytes[5];
@@ -126,9 +123,9 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
                     quantity,
                     data: &bytes[6..6 + byte_count as usize],
                 };
-                WriteMultipleRegisters(address, data)
+                Self::WriteMultipleRegisters(address, data)
             }
-            f::ReadWriteMultipleRegisters => {
+            F::ReadWriteMultipleRegisters => {
                 let read_address = BigEndian::read_u16(&bytes[1..3]);
                 let read_quantity = BigEndian::read_u16(&bytes[3..5]);
                 let write_address = BigEndian::read_u16(&bytes[5..7]);
@@ -141,10 +138,10 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
                     quantity: write_quantity,
                     data: &bytes[10..10 + write_count as usize],
                 };
-                ReadWriteMultipleRegisters(read_address, read_quantity, write_address, data)
+                Self::ReadWriteMultipleRegisters(read_address, read_quantity, write_address, data)
             }
             _ => match fn_code {
-                fn_code if fn_code < 0x80 => Custom(FnCode::Custom(fn_code), &bytes[1..]),
+                fn_code if fn_code < 0x80 => Self::Custom(FnCode::Custom(fn_code), &bytes[1..]),
                 _ => return Err(Error::FnCode(fn_code)),
             },
         };
@@ -156,14 +153,14 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
     type Error = Error;
 
     fn try_from(bytes: &'r [u8]) -> Result<Self> {
-        use crate::frame::Response::*;
+        use FnCode as F;
+
         let fn_code = bytes[0];
         if bytes.len() < min_response_pdu_len(fn_code.into()) {
             return Err(Error::BufferSize);
         }
-        use FnCode as f;
         let rsp = match FnCode::from(fn_code) {
-            f::ReadCoils | FnCode::ReadDiscreteInputs => {
+            F::ReadCoils | FnCode::ReadDiscreteInputs => {
                 let byte_count = bytes[1] as usize;
                 if byte_count + 2 > bytes.len() {
                     return Err(Error::BufferSize);
@@ -174,24 +171,26 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
                 let quantity = byte_count * 8;
 
                 match FnCode::from(fn_code) {
-                    FnCode::ReadCoils => ReadCoils(Coils { data, quantity }),
-                    FnCode::ReadDiscreteInputs => ReadDiscreteInputs(Coils { data, quantity }),
+                    FnCode::ReadCoils => Self::ReadCoils(Coils { data, quantity }),
+                    FnCode::ReadDiscreteInputs => {
+                        Self::ReadDiscreteInputs(Coils { data, quantity })
+                    }
                     _ => unreachable!(),
                 }
             }
-            f::WriteSingleCoil => WriteSingleCoil(BigEndian::read_u16(&bytes[1..])),
+            F::WriteSingleCoil => Self::WriteSingleCoil(BigEndian::read_u16(&bytes[1..])),
 
-            f::WriteMultipleCoils | f::WriteSingleRegister | f::WriteMultipleRegisters => {
+            F::WriteMultipleCoils | F::WriteSingleRegister | F::WriteMultipleRegisters => {
                 let addr = BigEndian::read_u16(&bytes[1..]);
                 let payload = BigEndian::read_u16(&bytes[3..]);
                 match FnCode::from(fn_code) {
-                    f::WriteMultipleCoils => WriteMultipleCoils(addr, payload),
-                    f::WriteSingleRegister => WriteSingleRegister(addr, payload),
-                    f::WriteMultipleRegisters => WriteMultipleRegisters(addr, payload),
+                    F::WriteMultipleCoils => Self::WriteMultipleCoils(addr, payload),
+                    F::WriteSingleRegister => Self::WriteSingleRegister(addr, payload),
+                    F::WriteMultipleRegisters => Self::WriteMultipleRegisters(addr, payload),
                     _ => unreachable!(),
                 }
             }
-            f::ReadInputRegisters | f::ReadHoldingRegisters | f::ReadWriteMultipleRegisters => {
+            F::ReadInputRegisters | F::ReadHoldingRegisters | F::ReadWriteMultipleRegisters => {
                 let byte_count = bytes[1] as usize;
                 let quantity = byte_count / 2;
                 if byte_count + 2 > bytes.len() {
@@ -201,13 +200,13 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
                 let data = Data { data, quantity };
 
                 match FnCode::from(fn_code) {
-                    f::ReadInputRegisters => ReadInputRegisters(data),
-                    f::ReadHoldingRegisters => ReadHoldingRegisters(data),
-                    f::ReadWriteMultipleRegisters => ReadWriteMultipleRegisters(data),
+                    F::ReadInputRegisters => Self::ReadInputRegisters(data),
+                    F::ReadHoldingRegisters => Self::ReadHoldingRegisters(data),
+                    F::ReadWriteMultipleRegisters => Self::ReadWriteMultipleRegisters(data),
                     _ => unreachable!(),
                 }
             }
-            _ => Custom(FnCode::from(fn_code), &bytes[1..]),
+            _ => Self::Custom(FnCode::from(fn_code), &bytes[1..]),
         };
         Ok(rsp)
     }
@@ -223,29 +222,28 @@ impl<'r> Encode for Request<'r> {
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
         }
-        use crate::frame::Request::*;
         buf[0] = FnCode::from(*self).into();
         match self {
-            ReadCoils(address, payload)
-            | ReadDiscreteInputs(address, payload)
-            | ReadInputRegisters(address, payload)
-            | ReadHoldingRegisters(address, payload)
-            | WriteSingleRegister(address, payload) => {
+            Self::ReadCoils(address, payload)
+            | Self::ReadDiscreteInputs(address, payload)
+            | Self::ReadInputRegisters(address, payload)
+            | Self::ReadHoldingRegisters(address, payload)
+            | Self::WriteSingleRegister(address, payload) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
                 BigEndian::write_u16(&mut buf[3..], *payload);
             }
-            WriteSingleCoil(address, state) => {
+            Self::WriteSingleCoil(address, state) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
                 BigEndian::write_u16(&mut buf[3..], bool_to_u16_coil(*state));
             }
-            WriteMultipleCoils(address, coils) => {
+            Self::WriteMultipleCoils(address, coils) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
                 let len = coils.len();
                 BigEndian::write_u16(&mut buf[3..], len as u16);
                 buf[5] = coils.packed_len() as u8;
                 coils.copy_to(&mut buf[6..]);
             }
-            WriteMultipleRegisters(address, words) => {
+            Self::WriteMultipleRegisters(address, words) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
                 let len = words.len();
                 BigEndian::write_u16(&mut buf[3..], len as u16);
@@ -254,7 +252,7 @@ impl<'r> Encode for Request<'r> {
                     buf[idx + 6] = *byte;
                 }
             }
-            ReadWriteMultipleRegisters(read_address, quantity, write_address, words) => {
+            Self::ReadWriteMultipleRegisters(read_address, quantity, write_address, words) => {
                 BigEndian::write_u16(&mut buf[1..], *read_address);
                 BigEndian::write_u16(&mut buf[3..], *quantity);
                 BigEndian::write_u16(&mut buf[5..], *write_address);
@@ -265,7 +263,7 @@ impl<'r> Encode for Request<'r> {
                     buf[idx + 10] = *byte;
                 }
             }
-            Custom(_, custom_data) => {
+            Self::Custom(_, custom_data) => {
                 custom_data.iter().enumerate().for_each(|(idx, d)| {
                     buf[idx + 1] = *d;
                 });
@@ -279,32 +277,34 @@ impl<'r> Encode for Request<'r> {
 
 impl<'r> Encode for Response<'r> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
+        use crate::frame::Response as R;
+
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
         }
-        use crate::frame::Response::*;
+
         buf[0] = FnCode::from(*self).into();
         match self {
-            ReadCoils(coils) | ReadDiscreteInputs(coils) => {
+            R::ReadCoils(coils) | R::ReadDiscreteInputs(coils) => {
                 buf[1] = coils.packed_len() as u8;
                 coils.copy_to(&mut buf[2..]);
             }
-            ReadInputRegisters(registers)
-            | ReadHoldingRegisters(registers)
-            | ReadWriteMultipleRegisters(registers) => {
+            R::ReadInputRegisters(registers)
+            | R::ReadHoldingRegisters(registers)
+            | R::ReadWriteMultipleRegisters(registers) => {
                 buf[1] = (registers.len() * 2) as u8;
                 registers.copy_to(&mut buf[2..]);
             }
-            WriteSingleCoil(address) => {
+            R::WriteSingleCoil(address) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
             }
-            WriteMultipleCoils(address, payload)
-            | WriteMultipleRegisters(address, payload)
-            | WriteSingleRegister(address, payload) => {
+            R::WriteMultipleCoils(address, payload)
+            | R::WriteMultipleRegisters(address, payload)
+            | R::WriteSingleRegister(address, payload) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
                 BigEndian::write_u16(&mut buf[3..], *payload);
             }
-            Custom(_, custom_data) => {
+            R::Custom(_, custom_data) => {
                 for (idx, d) in custom_data.iter().enumerate() {
                     buf[idx + 1] = *d;
                 }
@@ -344,27 +344,30 @@ impl Encode for ExceptionResponse {
 }
 
 fn min_request_pdu_len(fn_code: FnCode) -> usize {
-    use FnCode::*;
+    use FnCode as F;
     match fn_code {
-        ReadCoils | ReadDiscreteInputs | ReadInputRegisters | WriteSingleCoil
-        | ReadHoldingRegisters | WriteSingleRegister => 5,
-        WriteMultipleCoils => 6,
-        WriteMultipleRegisters => 6,
-        ReadWriteMultipleRegisters => 10,
+        F::ReadCoils
+        | F::ReadDiscreteInputs
+        | F::ReadInputRegisters
+        | F::WriteSingleCoil
+        | F::ReadHoldingRegisters
+        | F::WriteSingleRegister => 5,
+        F::WriteMultipleCoils | F::WriteMultipleRegisters => 6,
+        F::ReadWriteMultipleRegisters => 10,
         _ => 1,
     }
 }
 
 fn min_response_pdu_len(fn_code: FnCode) -> usize {
-    use FnCode::*;
+    use FnCode as F;
     match fn_code {
-        ReadCoils
-        | ReadDiscreteInputs
-        | ReadInputRegisters
-        | ReadHoldingRegisters
-        | ReadWriteMultipleRegisters => 2,
-        WriteSingleCoil => 3,
-        WriteMultipleCoils | WriteSingleRegister | WriteMultipleRegisters => 5,
+        F::ReadCoils
+        | F::ReadDiscreteInputs
+        | F::ReadInputRegisters
+        | F::ReadHoldingRegisters
+        | F::ReadWriteMultipleRegisters => 2,
+        F::WriteSingleCoil => 3,
+        F::WriteMultipleCoils | F::WriteSingleRegister | F::WriteMultipleRegisters => 5,
         _ => 1,
     }
 }

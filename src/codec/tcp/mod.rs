@@ -167,7 +167,7 @@ pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
             }
         }
         0x05 | 0x06 | 0x0B | 0x0F | 0x10 => Some(5),
-        0x07 => Some(2),
+        0x07 | 0x81..=0xAB => Some(2),
         0x16 => Some(7),
         0x18 => {
             if adu_buf.len() > 9 {
@@ -177,7 +177,6 @@ pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
                 None
             }
         }
-        0x81..=0xAB => Some(2),
         _ => return Err(Error::FnCode(fn_code)),
     };
     Ok(len)

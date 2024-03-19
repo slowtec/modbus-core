@@ -88,6 +88,7 @@ pub fn decode(
 }
 
 /// Extract a PDU frame out of a buffer.
+#[allow(clippy::similar_names)]
 pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>> {
     let adu_len = 1 + pdu_len;
     if buf.len() >= adu_len + 2 {
@@ -181,7 +182,7 @@ pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
             }
         }
         0x05 | 0x06 | 0x0B | 0x0F | 0x10 => Some(5),
-        0x07 => Some(2),
+        0x07 | 0x81..=0xAB => Some(2),
         0x16 => Some(7),
         0x18 => {
             if adu_buf.len() > 3 {
@@ -191,7 +192,6 @@ pub fn response_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
                 None
             }
         }
-        0x81..=0xAB => Some(2),
         _ => return Err(Error::FnCode(fn_code)),
     };
     Ok(len)

@@ -53,7 +53,7 @@ impl<'d> Data<'d> {
 
 /// Data iterator
 // TODO: crate a generic iterator
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataIter<'d> {
     cnt: usize,
     data: Data<'d>,

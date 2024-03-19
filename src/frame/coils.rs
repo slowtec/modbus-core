@@ -52,7 +52,7 @@ impl<'c> Coils<'c> {
 
 /// Coils iterator.
 // TODO: crate an generic iterator
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CoilsIter<'c> {
     cnt: usize,
     coils: Coils<'c>,
