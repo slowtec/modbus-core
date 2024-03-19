@@ -1,3 +1,5 @@
+use core::fmt;
+
 mod coils;
 mod data;
 pub(crate) mod rtu;
@@ -5,55 +7,83 @@ pub(crate) mod tcp;
 
 pub use self::{coils::*, data::*};
 use byteorder::{BigEndian, ByteOrder};
-use core::fmt;
 
 /// A Modbus function code.
 ///
 /// It is represented by an unsigned 8 bit integer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FnCode {
+pub enum FunctionCode {
+    /// Modbus Function Code: `01` (`0x01`).
     ReadCoils,
+
+    /// Modbus Function Code: `02` (`0x02`).
     ReadDiscreteInputs,
+
+    /// Modbus Function Code: `05` (`0x05`).
     WriteSingleCoil,
-    WriteMultipleCoils,
-    ReadInputRegisters,
-    ReadHoldingRegisters,
+
+    /// Modbus Function Code: `06` (`0x06`).
     WriteSingleRegister,
+
+    /// Modbus Function Code: `03` (`0x03`).
+    ReadHoldingRegisters,
+
+    /// Modbus Function Code: `04` (`0x04`).
+    ReadInputRegisters,
+
+    /// Modbus Function Code: `15` (`0x0F`).
+    WriteMultipleCoils,
+
+    /// Modbus Function Code: `16` (`0x10`).
     WriteMultipleRegisters,
+
+    /// Modbus Function Code: `22` (`0x16`).
+    MaskWriteRegister,
+
+    /// Modbus Function Code: `23` (`0x17`).
     ReadWriteMultipleRegisters,
+
     #[cfg(feature = "rtu")]
     ReadExceptionStatus,
+
     #[cfg(feature = "rtu")]
     Diagnostics,
+
     #[cfg(feature = "rtu")]
     GetCommEventCounter,
+
     #[cfg(feature = "rtu")]
     GetCommEventLog,
+
     #[cfg(feature = "rtu")]
     ReportServerId,
-    //TODO:
-    //- ReadFileRecord
-    //- WriteFileRecord
-    //- MaskWriteRegiger
-    //TODO:
-    //- Read FifoQueue
-    //- EncapsulatedInterfaceTransport
-    //- CanOpenGeneralReferenceRequestAndResponsePdu
-    //- ReadDeviceIdentification
+
+    // TODO:
+    // - ReadFileRecord
+    // - WriteFileRecord
+    // TODO:
+    // - Read FifoQueue
+    // - EncapsulatedInterfaceTransport
+    // - CanOpenGeneralReferenceRequestAndResponsePdu
+    // - ReadDeviceIdentification
+    /// Custom Modbus Function Code.
     Custom(u8),
 }
 
-impl From<u8> for FnCode {
-    fn from(c: u8) -> Self {
-        match c {
+impl FunctionCode {
+    /// Create a new [`FunctionCode`] with `value`.
+    #[must_use]
+    pub const fn new(value: u8) -> Self {
+        match value {
             0x01 => Self::ReadCoils,
             0x02 => Self::ReadDiscreteInputs,
             0x05 => Self::WriteSingleCoil,
-            0x0F => Self::WriteMultipleCoils,
-            0x04 => Self::ReadInputRegisters,
-            0x03 => Self::ReadHoldingRegisters,
             0x06 => Self::WriteSingleRegister,
+            0x03 => Self::ReadHoldingRegisters,
+            0x04 => Self::ReadInputRegisters,
+            0x0F => Self::WriteMultipleCoils,
             0x10 => Self::WriteMultipleRegisters,
+            0x16 => Self::MaskWriteRegister,
             0x17 => Self::ReadWriteMultipleRegisters,
             #[cfg(feature = "rtu")]
             0x07 => Self::ReadExceptionStatus,
@@ -65,41 +95,48 @@ impl From<u8> for FnCode {
             0x0C => Self::GetCommEventLog,
             #[cfg(feature = "rtu")]
             0x11 => Self::ReportServerId,
-            _ => Self::Custom(c),
+            code => FunctionCode::Custom(code),
+        }
+    }
+
+    /// Get the [`u8`] value of the current [`FunctionCode`].
+    #[must_use]
+    pub const fn value(self) -> u8 {
+        match self {
+            Self::ReadCoils => 0x01,
+            Self::ReadDiscreteInputs => 0x02,
+            Self::WriteSingleCoil => 0x05,
+            Self::WriteSingleRegister => 0x06,
+            Self::ReadHoldingRegisters => 0x03,
+            Self::ReadInputRegisters => 0x04,
+            Self::WriteMultipleCoils => 0x0F,
+            Self::WriteMultipleRegisters => 0x10,
+            Self::MaskWriteRegister => 0x16,
+            Self::ReadWriteMultipleRegisters => 0x17,
+            #[cfg(feature = "rtu")]
+            Self::ReadExceptionStatus => 0x07,
+            #[cfg(feature = "rtu")]
+            Self::Diagnostics => 0x08,
+            #[cfg(feature = "rtu")]
+            Self::GetCommEventCounter => 0x0B,
+            #[cfg(feature = "rtu")]
+            Self::GetCommEventLog => 0x0C,
+            #[cfg(feature = "rtu")]
+            Self::ReportServerId => 0x11,
+            Self::Custom(code) => code,
         }
     }
 }
 
-impl From<FnCode> for u8 {
-    fn from(code: FnCode) -> Self {
-        match code {
-            FnCode::ReadCoils => 0x01,
-            FnCode::ReadDiscreteInputs => 0x02,
-            FnCode::WriteSingleCoil => 0x05,
-            FnCode::WriteMultipleCoils => 0x0F,
-            FnCode::ReadInputRegisters => 0x04,
-            FnCode::ReadHoldingRegisters => 0x03,
-            FnCode::WriteSingleRegister => 0x06,
-            FnCode::WriteMultipleRegisters => 0x10,
-            FnCode::ReadWriteMultipleRegisters => 0x17,
-            #[cfg(feature = "rtu")]
-            FnCode::ReadExceptionStatus => 0x07,
-            #[cfg(feature = "rtu")]
-            FnCode::Diagnostics => 0x08,
-            #[cfg(feature = "rtu")]
-            FnCode::GetCommEventCounter => 0x0B,
-            #[cfg(feature = "rtu")]
-            FnCode::GetCommEventLog => 0x0C,
-            #[cfg(feature = "rtu")]
-            FnCode::ReportServerId => 0x11,
-            FnCode::Custom(c) => c,
-        }
+impl fmt::Display for FunctionCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.value().fmt(f)
     }
 }
 
 /// A Modbus sub-function code is represented by an unsigned 16 bit integer.
 #[cfg(feature = "rtu")]
-pub(crate) type SubFnCode = u16;
+pub(crate) type SubFunctionCode = u16;
 
 /// A Modbus address is represented by 16 bit (from `0` to `65535`).
 pub(crate) type Address = u16;
@@ -134,7 +171,7 @@ pub enum Request<'r> {
     #[cfg(feature = "rtu")]
     ReadExceptionStatus,
     #[cfg(feature = "rtu")]
-    Diagnostics(SubFnCode, Data<'r>),
+    Diagnostics(SubFunctionCode, Data<'r>),
     #[cfg(feature = "rtu")]
     GetCommEventCounter,
     #[cfg(feature = "rtu")]
@@ -150,13 +187,13 @@ pub enum Request<'r> {
     //- EncapsulatedInterfaceTransport
     //- CanOpenGeneralReferenceRequestAndResponsePdu
     //- ReadDeviceIdentification
-    Custom(FnCode, &'r [u8]),
+    Custom(FunctionCode, &'r [u8]),
 }
 
 /// A server (slave) exception response.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExceptionResponse {
-    pub function: FnCode,
+    pub function: FunctionCode,
     pub exception: Exception,
 }
 
@@ -206,10 +243,10 @@ pub enum Response<'r> {
     //- EncapsulatedInterfaceTransport
     //- CanOpenGeneralReferenceRequestAndResponsePdu
     //- ReadDeviceIdentification
-    Custom(FnCode, &'r [u8]),
+    Custom(FunctionCode, &'r [u8]),
 }
 
-impl<'r> From<Request<'r>> for FnCode {
+impl<'r> From<Request<'r>> for FunctionCode {
     fn from(r: Request<'r>) -> Self {
         use Request as R;
 
@@ -238,7 +275,7 @@ impl<'r> From<Request<'r>> for FnCode {
     }
 }
 
-impl<'r> From<Response<'r>> for FnCode {
+impl<'r> From<Response<'r>> for FunctionCode {
     fn from(r: Response<'r>) -> Self {
         use Response as R;
 
@@ -346,16 +383,16 @@ mod tests {
 
     #[test]
     fn function_code_into_u8() {
-        let x: u8 = FnCode::WriteMultipleCoils.into();
+        let x: u8 = FunctionCode::WriteMultipleCoils.value();
         assert_eq!(x, 15);
-        let x: u8 = FnCode::Custom(0xBB).into();
+        let x: u8 = FunctionCode::Custom(0xBB).value();
         assert_eq!(x, 0xBB);
     }
 
     #[test]
     fn function_code_from_u8() {
-        assert_eq!(FnCode::from(15), FnCode::WriteMultipleCoils);
-        assert_eq!(FnCode::from(0xBB), FnCode::Custom(0xBB));
+        assert_eq!(FunctionCode::new(15), FunctionCode::WriteMultipleCoils);
+        assert_eq!(FunctionCode::new(0xBB), FunctionCode::Custom(0xBB));
     }
 
     #[test]
@@ -400,10 +437,10 @@ mod tests {
                 ),
                 0x17,
             ),
-            (Custom(FnCode::Custom(88), &[]), 88),
+            (Custom(FunctionCode::Custom(88), &[]), 88),
         ];
         for (req, expected) in requests {
-            let code: u8 = FnCode::from(*req).into();
+            let code: u8 = FunctionCode::from(*req).value();
             assert_eq!(*expected, code);
         }
     }
@@ -451,10 +488,10 @@ mod tests {
                 }),
                 0x17,
             ),
-            (Custom(FnCode::Custom(99), &[]), 99),
+            (Custom(FunctionCode::Custom(99), &[]), 99),
         ];
         for (req, expected) in responses {
-            let code: u8 = FnCode::from(*req).into();
+            let code: u8 = FunctionCode::from(*req).value();
             assert_eq!(*expected, code);
         }
     }

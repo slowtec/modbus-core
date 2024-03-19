@@ -80,7 +80,7 @@ mod tests {
         let RequestAdu { hdr, pdu } = adu;
         let RequestPdu(pdu) = pdu;
         assert_eq!(hdr.slave, 0x12);
-        assert_eq!(FnCode::from(pdu), FnCode::WriteSingleRegister);
+        assert_eq!(FunctionCode::from(pdu), FunctionCode::WriteSingleRegister);
     }
 
     #[test]

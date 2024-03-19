@@ -143,7 +143,7 @@ mod tests {
         let RequestPdu(pdu) = pdu;
         assert_eq!(hdr.transaction_id, 42);
         assert_eq!(hdr.unit_id, 0x12);
-        assert_eq!(FnCode::from(pdu), FnCode::WriteSingleRegister);
+        assert_eq!(FunctionCode::from(pdu), FunctionCode::WriteSingleRegister);
     }
 
     #[test]

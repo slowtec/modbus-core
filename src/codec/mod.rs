@@ -38,7 +38,7 @@ impl TryFrom<u8> for Exception {
 impl From<ExceptionResponse> for [u8; 2] {
     fn from(ex: ExceptionResponse) -> [u8; 2] {
         let data = &mut [0; 2];
-        let fn_code: u8 = ex.function.into();
+        let fn_code: u8 = ex.function.value();
         debug_assert!(fn_code < 0x80);
         data[0] = fn_code + 0x80;
         data[1] = ex.exception as u8;
@@ -54,7 +54,7 @@ impl TryFrom<&[u8]> for ExceptionResponse {
         if fn_err_code < 0x80 {
             return Err(Error::ExceptionFnCode(fn_err_code));
         }
-        let function = (fn_err_code - 0x80).into();
+        let function = FunctionCode::new(fn_err_code - 0x80);
         let exception = Exception::try_from(bytes[1])?;
         Ok(ExceptionResponse {
             function,
@@ -67,7 +67,7 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
     type Error = Error;
 
     fn try_from(bytes: &'r [u8]) -> Result<Self> {
-        use FnCode as F;
+        use FunctionCode as F;
 
         if bytes.is_empty() {
             return Err(Error::BufferSize);
@@ -75,11 +75,11 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
 
         let fn_code = bytes[0];
 
-        if bytes.len() < min_request_pdu_len(fn_code.into()) {
+        if bytes.len() < min_request_pdu_len(FunctionCode::new(fn_code)) {
             return Err(Error::BufferSize);
         }
 
-        let req = match FnCode::from(fn_code) {
+        let req = match FunctionCode::new(fn_code) {
             F::ReadCoils
             | F::ReadDiscreteInputs
             | F::ReadInputRegisters
@@ -88,7 +88,7 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
                 let addr = BigEndian::read_u16(&bytes[1..3]);
                 let quantity = BigEndian::read_u16(&bytes[3..5]);
 
-                match FnCode::from(fn_code) {
+                match FunctionCode::new(fn_code) {
                     F::ReadCoils => Self::ReadCoils(addr, quantity),
                     F::ReadDiscreteInputs => Self::ReadDiscreteInputs(addr, quantity),
                     F::ReadInputRegisters => Self::ReadInputRegisters(addr, quantity),
@@ -141,7 +141,9 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
                 Self::ReadWriteMultipleRegisters(read_address, read_quantity, write_address, data)
             }
             _ => match fn_code {
-                fn_code if fn_code < 0x80 => Self::Custom(FnCode::Custom(fn_code), &bytes[1..]),
+                fn_code if fn_code < 0x80 => {
+                    Self::Custom(FunctionCode::Custom(fn_code), &bytes[1..])
+                }
                 _ => return Err(Error::FnCode(fn_code)),
             },
         };
@@ -153,14 +155,14 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
     type Error = Error;
 
     fn try_from(bytes: &'r [u8]) -> Result<Self> {
-        use FnCode as F;
+        use FunctionCode as F;
 
         let fn_code = bytes[0];
-        if bytes.len() < min_response_pdu_len(fn_code.into()) {
+        if bytes.len() < min_response_pdu_len(FunctionCode::new(fn_code)) {
             return Err(Error::BufferSize);
         }
-        let rsp = match FnCode::from(fn_code) {
-            F::ReadCoils | FnCode::ReadDiscreteInputs => {
+        let rsp = match FunctionCode::new(fn_code) {
+            F::ReadCoils | FunctionCode::ReadDiscreteInputs => {
                 let byte_count = bytes[1] as usize;
                 if byte_count + 2 > bytes.len() {
                     return Err(Error::BufferSize);
@@ -170,9 +172,9 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
                 // therefore we just assume that the whole byte is meant.
                 let quantity = byte_count * 8;
 
-                match FnCode::from(fn_code) {
-                    FnCode::ReadCoils => Self::ReadCoils(Coils { data, quantity }),
-                    FnCode::ReadDiscreteInputs => {
+                match FunctionCode::new(fn_code) {
+                    FunctionCode::ReadCoils => Self::ReadCoils(Coils { data, quantity }),
+                    FunctionCode::ReadDiscreteInputs => {
                         Self::ReadDiscreteInputs(Coils { data, quantity })
                     }
                     _ => unreachable!(),
@@ -183,7 +185,7 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
             F::WriteMultipleCoils | F::WriteSingleRegister | F::WriteMultipleRegisters => {
                 let addr = BigEndian::read_u16(&bytes[1..]);
                 let payload = BigEndian::read_u16(&bytes[3..]);
-                match FnCode::from(fn_code) {
+                match FunctionCode::new(fn_code) {
                     F::WriteMultipleCoils => Self::WriteMultipleCoils(addr, payload),
                     F::WriteSingleRegister => Self::WriteSingleRegister(addr, payload),
                     F::WriteMultipleRegisters => Self::WriteMultipleRegisters(addr, payload),
@@ -199,14 +201,14 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
                 let data = &bytes[2..2 + byte_count];
                 let data = Data { data, quantity };
 
-                match FnCode::from(fn_code) {
+                match FunctionCode::new(fn_code) {
                     F::ReadInputRegisters => Self::ReadInputRegisters(data),
                     F::ReadHoldingRegisters => Self::ReadHoldingRegisters(data),
                     F::ReadWriteMultipleRegisters => Self::ReadWriteMultipleRegisters(data),
                     _ => unreachable!(),
                 }
             }
-            _ => Self::Custom(FnCode::from(fn_code), &bytes[1..]),
+            _ => Self::Custom(FunctionCode::new(fn_code), &bytes[1..]),
         };
         Ok(rsp)
     }
@@ -222,7 +224,7 @@ impl<'r> Encode for Request<'r> {
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
         }
-        buf[0] = FnCode::from(*self).into();
+        buf[0] = FunctionCode::from(*self).value();
         match self {
             Self::ReadCoils(address, payload)
             | Self::ReadDiscreteInputs(address, payload)
@@ -281,7 +283,7 @@ impl<'r> Encode for Response<'r> {
             return Err(Error::BufferSize);
         }
 
-        buf[0] = FnCode::from(*self).into();
+        buf[0] = FunctionCode::from(*self).value();
         match self {
             Self::ReadCoils(coils) | Self::ReadDiscreteInputs(coils) => {
                 buf[1] = coils.packed_len() as u8;
@@ -341,8 +343,8 @@ impl Encode for ExceptionResponse {
     }
 }
 
-const fn min_request_pdu_len(fn_code: FnCode) -> usize {
-    use FnCode as F;
+const fn min_request_pdu_len(fn_code: FunctionCode) -> usize {
+    use FunctionCode as F;
     match fn_code {
         F::ReadCoils
         | F::ReadDiscreteInputs
@@ -356,8 +358,8 @@ const fn min_request_pdu_len(fn_code: FnCode) -> usize {
     }
 }
 
-const fn min_response_pdu_len(fn_code: FnCode) -> usize {
-    use FnCode as F;
+const fn min_response_pdu_len(fn_code: FunctionCode) -> usize {
+    use FunctionCode as F;
     match fn_code {
         F::ReadCoils
         | F::ReadDiscreteInputs
@@ -377,7 +379,7 @@ mod tests {
     #[test]
     fn exception_response_into_bytes() {
         let bytes: [u8; 2] = ExceptionResponse {
-            function: 0x03.into(),
+            function: FunctionCode::new(0x03),
             exception: Exception::IllegalDataAddress,
         }
         .into();
@@ -395,7 +397,7 @@ mod tests {
         assert_eq!(
             rsp,
             ExceptionResponse {
-                function: 0x03.into(),
+                function: FunctionCode::new(0x03),
                 exception: Exception::IllegalDataAddress,
             }
         );
@@ -403,7 +405,7 @@ mod tests {
 
     #[test]
     fn test_min_request_pdu_len() {
-        use FnCode::*;
+        use FunctionCode::*;
 
         assert_eq!(min_request_pdu_len(ReadCoils), 5);
         assert_eq!(min_request_pdu_len(ReadDiscreteInputs), 5);
@@ -418,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_min_response_pdu_len() {
-        use FnCode::*;
+        use FunctionCode::*;
 
         assert_eq!(min_response_pdu_len(ReadCoils), 2);
         assert_eq!(min_response_pdu_len(ReadDiscreteInputs), 2);
@@ -599,7 +601,7 @@ mod tests {
         #[test]
         fn custom() {
             let bytes = &mut [0; 5];
-            Request::Custom(FnCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
+            Request::Custom(FunctionCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
                 .encode(bytes)
                 .unwrap();
             assert_eq!(bytes[0], 0x55);
@@ -747,7 +749,7 @@ mod tests {
             let req = Request::try_from(bytes).unwrap();
             assert_eq!(
                 req,
-                Request::Custom(FnCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
+                Request::Custom(FunctionCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
             );
         }
     }
@@ -877,7 +879,7 @@ mod tests {
 
         #[test]
         fn custom() {
-            let res = Response::Custom(FnCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF]);
+            let res = Response::Custom(FunctionCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF]);
             let bytes = &mut [0; 5];
             res.encode(bytes).unwrap();
             assert_eq!(bytes[0], 0x55);
@@ -1020,11 +1022,11 @@ mod tests {
             let rsp = Response::try_from(bytes).unwrap();
             assert_eq!(
                 rsp,
-                Response::Custom(FnCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
+                Response::Custom(FunctionCode::Custom(0x55), &[0xCC, 0x88, 0xAA, 0xFF])
             );
             let bytes: &[u8] = &[0x66];
             let rsp = Response::try_from(bytes).unwrap();
-            assert_eq!(rsp, Response::Custom(FnCode::Custom(0x66), &[]));
+            assert_eq!(rsp, Response::Custom(FunctionCode::Custom(0x66), &[]));
         }
     }
 }
