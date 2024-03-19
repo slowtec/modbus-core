@@ -32,7 +32,7 @@ pub fn decode(
     decoder_type: DecoderType,
     buf: &[u8],
 ) -> Result<Option<(DecodedFrame, FrameLocation)>> {
-    use DecoderType::*;
+    use DecoderType::{Request, Response};
     let mut drop_cnt = 0;
 
     loop {

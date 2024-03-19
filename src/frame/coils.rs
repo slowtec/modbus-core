@@ -26,18 +26,22 @@ impl<'c> Coils<'c> {
         });
     }
     /// Quantity of coils
+    #[must_use]
     pub const fn len(&self) -> usize {
         self.quantity
     }
     /// Number of bytes required to pack the coils.
+    #[must_use]
     pub const fn packed_len(&self) -> usize {
         packed_coils_len(self.quantity)
     }
     ///  Returns `true` if the container has no items.
+    #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.quantity == 0
     }
     /// Get a specific coil.
+    #[must_use]
     pub fn get(&self, idx: usize) -> Option<Coil> {
         if idx + 1 > self.quantity {
             return None;
@@ -77,6 +81,7 @@ impl<'c> IntoIterator for Coils<'c> {
 }
 
 /// Turn a bool into a u16 coil value
+#[must_use]
 pub fn bool_to_u16_coil(state: bool) -> u16 {
     if state {
         0xFF00
@@ -95,6 +100,7 @@ pub fn u16_coil_to_bool(coil: u16) -> Result<bool, Error> {
 }
 
 /// Calculate the number of bytes required for a given number of coils.
+#[must_use]
 pub const fn packed_coils_len(bitcount: usize) -> usize {
     (bitcount + 7) / 8
 }
@@ -108,7 +114,7 @@ pub fn pack_coils(coils: &[Coil], bytes: &mut [u8]) -> Result<usize, Error> {
         return Err(Error::BufferSize);
     }
     coils.iter().enumerate().for_each(|(i, b)| {
-        let v = if *b { 0b1 } else { 0b0 };
+        let v = u8::from(*b);
         bytes[i / 8] |= v << (i % 8);
     });
     Ok(packed_size)

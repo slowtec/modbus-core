@@ -302,12 +302,13 @@ impl fmt::Display for Exception {
             GatewayPathUnavailable => "Gateway path unavailable",
             GatewayTargetDevice => "Gateway target device failed to respond",
         };
-        write!(f, "{}", desc)
+        write!(f, "{desc}")
     }
 }
 
 impl<'r> Request<'r> {
     /// Number of bytes required for a serialized PDU frame.
+    #[must_use]
     pub fn pdu_len(&self) -> usize {
         use Request::*;
         match *self {
@@ -329,6 +330,7 @@ impl<'r> Request<'r> {
 
 impl<'r> Response<'r> {
     /// Number of bytes required for a serialized PDU frame.
+    #[must_use]
     pub fn pdu_len(&self) -> usize {
         use Response::*;
         match *self {

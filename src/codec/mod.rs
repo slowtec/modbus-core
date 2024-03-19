@@ -112,7 +112,7 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
                     return Err(Error::ByteCount(byte_count));
                 }
                 let data = &bytes[6..];
-                let coils = Coils { quantity, data };
+                let coils = Coils { data, quantity };
                 WriteMultipleCoils(address, coils)
             }
             f::WriteMultipleRegisters => {
@@ -174,8 +174,8 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
                 let quantity = byte_count * 8;
 
                 match FnCode::from(fn_code) {
-                    FnCode::ReadCoils => ReadCoils(Coils { quantity, data }),
-                    FnCode::ReadDiscreteInputs => ReadDiscreteInputs(Coils { quantity, data }),
+                    FnCode::ReadCoils => ReadCoils(Coils { data, quantity }),
+                    FnCode::ReadDiscreteInputs => ReadDiscreteInputs(Coils { data, quantity }),
                     _ => unreachable!(),
                 }
             }
@@ -198,7 +198,7 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
                     return Err(Error::BufferSize);
                 }
                 let data = &bytes[2..2 + byte_count];
-                let data = Data { quantity, data };
+                let data = Data { data, quantity };
 
                 match FnCode::from(fn_code) {
                     f::ReadInputRegisters => ReadInputRegisters(data),
@@ -214,7 +214,7 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
 }
 
 /// Encode a struct into a buffer.
-pub trait Encode {
+trait Encode {
     fn encode(&self, buf: &mut [u8]) -> Result<usize>;
 }
 

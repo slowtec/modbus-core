@@ -31,14 +31,17 @@ impl<'d> Data<'d> {
         });
     }
     /// Quantity of words (u16 values)
+    #[must_use]
     pub const fn len(&self) -> usize {
         self.quantity
     }
     ///  Returns `true` if the container has no items.
+    #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.quantity == 0
     }
     /// Get a specific word.
+    #[must_use]
     pub fn get(&self, idx: usize) -> Option<Word> {
         if idx + 1 > self.quantity {
             return None;

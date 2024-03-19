@@ -3,6 +3,16 @@
 
 #![doc = include_str!("../README.md")]
 #![no_std]
+// Default lints
+#![warn(unreachable_pub)]
+#![warn(unsafe_code)]
+#![warn(unused)]
+// Clippy lints
+#![warn(clippy::pedantic)]
+#![allow(clippy::enum_glob_use)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::wildcard_imports)]
 
 mod codec;
 mod error;

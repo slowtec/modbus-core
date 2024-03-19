@@ -31,7 +31,7 @@ pub fn decode(
     decoder_type: DecoderType,
     buf: &[u8],
 ) -> Result<Option<(DecodedFrame, FrameLocation)>> {
-    use DecoderType::*;
+    use DecoderType::{Request, Response};
     let mut drop_cnt = 0;
 
     loop {
@@ -111,6 +111,7 @@ pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>>
 }
 
 /// Calculate the CRC (Cyclic Redundancy Check) sum.
+#[must_use]
 pub fn crc16(data: &[u8]) -> u16 {
     let mut crc = 0xFFFF;
     for x in data {
