@@ -133,7 +133,7 @@ pub fn crc16(data: &[u8]) -> u16 {
 }
 
 /// Extract the PDU length out of the ADU request buffer.
-pub fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
+pub const fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
     if adu_buf.len() < 2 {
         return Ok(None);
     }

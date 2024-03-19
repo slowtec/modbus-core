@@ -8,6 +8,7 @@
 #![warn(unsafe_code)]
 #![warn(unused)]
 // Clippy lints
+#![warn(clippy::missing_const_for_fn)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::cast_possible_truncation)] // FIXME
 #![allow(clippy::missing_errors_doc)]

@@ -277,7 +277,6 @@ impl<'r> Encode for Request<'r> {
 
 impl<'r> Encode for Response<'r> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
-        use crate::frame::Response as R;
 
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
@@ -285,26 +284,26 @@ impl<'r> Encode for Response<'r> {
 
         buf[0] = FnCode::from(*self).into();
         match self {
-            R::ReadCoils(coils) | R::ReadDiscreteInputs(coils) => {
+            Self::ReadCoils(coils) | Self::ReadDiscreteInputs(coils) => {
                 buf[1] = coils.packed_len() as u8;
                 coils.copy_to(&mut buf[2..]);
             }
-            R::ReadInputRegisters(registers)
-            | R::ReadHoldingRegisters(registers)
-            | R::ReadWriteMultipleRegisters(registers) => {
+            Self::ReadInputRegisters(registers)
+            | Self::ReadHoldingRegisters(registers)
+            | Self::ReadWriteMultipleRegisters(registers) => {
                 buf[1] = (registers.len() * 2) as u8;
                 registers.copy_to(&mut buf[2..]);
             }
-            R::WriteSingleCoil(address) => {
+            Self::WriteSingleCoil(address) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
             }
-            R::WriteMultipleCoils(address, payload)
-            | R::WriteMultipleRegisters(address, payload)
-            | R::WriteSingleRegister(address, payload) => {
+            Self::WriteMultipleCoils(address, payload)
+            | Self::WriteMultipleRegisters(address, payload)
+            | Self::WriteSingleRegister(address, payload) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
                 BigEndian::write_u16(&mut buf[3..], *payload);
             }
-            R::Custom(_, custom_data) => {
+            Self::Custom(_, custom_data) => {
                 for (idx, d) in custom_data.iter().enumerate() {
                     buf[idx + 1] = *d;
                 }
@@ -343,7 +342,7 @@ impl Encode for ExceptionResponse {
     }
 }
 
-fn min_request_pdu_len(fn_code: FnCode) -> usize {
+const fn min_request_pdu_len(fn_code: FnCode) -> usize {
     use FnCode as F;
     match fn_code {
         F::ReadCoils
@@ -358,7 +357,7 @@ fn min_request_pdu_len(fn_code: FnCode) -> usize {
     }
 }
 
-fn min_response_pdu_len(fn_code: FnCode) -> usize {
+const fn min_response_pdu_len(fn_code: FnCode) -> usize {
     use FnCode as F;
     match fn_code {
         F::ReadCoils

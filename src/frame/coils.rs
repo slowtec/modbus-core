@@ -17,6 +17,7 @@ impl<'c> Coils<'c> {
             quantity: bools.len(),
         })
     }
+
     //TODO: add tests
     pub(crate) fn copy_to(&self, buf: &mut [u8]) {
         let packed_len = self.packed_len();
@@ -25,24 +26,28 @@ impl<'c> Coils<'c> {
             buf[idx] = self.data[idx];
         });
     }
+
     /// Quantity of coils
     #[must_use]
     pub const fn len(&self) -> usize {
         self.quantity
     }
+
     /// Number of bytes required to pack the coils.
     #[must_use]
     pub const fn packed_len(&self) -> usize {
         packed_coils_len(self.quantity)
     }
+
     ///  Returns `true` if the container has no items.
     #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.quantity == 0
     }
+
     /// Get a specific coil.
     #[must_use]
-    pub fn get(&self, idx: usize) -> Option<Coil> {
+    pub const fn get(&self, idx: usize) -> Option<Coil> {
         if idx + 1 > self.quantity {
             return None;
         }
@@ -82,7 +87,7 @@ impl<'c> IntoIterator for Coils<'c> {
 
 /// Turn a bool into a u16 coil value
 #[must_use]
-pub fn bool_to_u16_coil(state: bool) -> u16 {
+pub const fn bool_to_u16_coil(state: bool) -> u16 {
     if state {
         0xFF00
     } else {
@@ -91,7 +96,7 @@ pub fn bool_to_u16_coil(state: bool) -> u16 {
 }
 
 /// Turn a u16 coil value into a boolean value.
-pub fn u16_coil_to_bool(coil: u16) -> Result<bool, Error> {
+pub const fn u16_coil_to_bool(coil: u16) -> Result<bool, Error> {
     match coil {
         0xFF00 => Ok(true),
         0x0000 => Ok(false),

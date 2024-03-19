@@ -118,7 +118,7 @@ pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>>
 }
 
 /// Extract the PDU length out of the ADU request buffer.
-pub fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
+pub const fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
     if adu_buf.len() < 8 {
         return Ok(None);
     }
