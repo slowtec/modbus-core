@@ -138,7 +138,7 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
                     return Err(Error::ByteCount(write_count));
                 }
                 let data = Data {
-                    quantity: write_quantity as usize,
+                    quantity: write_quantity,
                     data: &bytes[10..10 + write_count as usize],
                 };
                 ReadWriteMultipleRegisters(read_address, read_quantity, write_address, data)

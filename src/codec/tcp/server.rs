@@ -25,7 +25,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
                 .map(|pdu| Some(RequestAdu { hdr, pdu }))
                 .map_err(|err| {
                     // Unrecoverable error
-                    error!("Failed to decode request PDU: {}", err);
+                    log::error!("Failed to decode request PDU: {err}");
                     err
                 })
         } else {
@@ -62,7 +62,7 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
                     .map(|pdu| Some(ResponseAdu { hdr, pdu }))
                     .map_err(|err| {
                         // Unrecoverable error
-                        error!("Failed to decode response PDU: {}", err);
+                        log::error!("Failed to decode response PDU: {err}");
                         err
                     })
             } else {

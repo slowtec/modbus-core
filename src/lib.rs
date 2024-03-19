@@ -4,9 +4,6 @@
 #![doc = include_str!("../README.md")]
 #![no_std]
 
-#[macro_use]
-extern crate log;
-
 mod codec;
 mod error;
 mod frame;

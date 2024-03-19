@@ -109,7 +109,7 @@ pub fn pack_coils(coils: &[Coil], bytes: &mut [u8]) -> Result<usize, Error> {
     }
     coils.iter().enumerate().for_each(|(i, b)| {
         let v = if *b { 0b1 } else { 0b0 };
-        bytes[(i / 8) as usize] |= v << (i % 8);
+        bytes[i / 8] |= v << (i % 8);
     });
     Ok(packed_size)
 }
@@ -238,8 +238,8 @@ mod tests {
 
     #[test]
     fn convert_coil_to_bool() {
-        assert_eq!(u16_coil_to_bool(0xFF00).unwrap(), true);
-        assert_eq!(u16_coil_to_bool(0x0000).unwrap(), false);
+        assert!(u16_coil_to_bool(0xFF00).unwrap());
+        assert!(!u16_coil_to_bool(0x0000).unwrap());
         assert_eq!(
             u16_coil_to_bool(0x1234).err().unwrap(),
             Error::CoilValue(0x1234)
