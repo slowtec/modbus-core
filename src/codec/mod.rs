@@ -277,7 +277,6 @@ impl<'r> Encode for Request<'r> {
 
 impl<'r> Encode for Response<'r> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
-
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
         }

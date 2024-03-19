@@ -46,28 +46,21 @@ pub fn decode(
         }
         .and_then(|pdu_len| {
             retry = false;
-            if let Some(pdu_len) = pdu_len {
-                extract_frame(raw_frame, pdu_len).map(|x| {
-                    x.map(|res| {
-                        (
-                            res,
-                            FrameLocation {
-                                start: drop_cnt,
-                                size: pdu_len + 3,
-                            },
-                        )
-                    })
-                })
-            } else {
+            let Some(pdu_len) = pdu_len else {
                 // Incomplete frame
-                Ok(None)
-            }
+                return Ok(None);
+            };
+            extract_frame(raw_frame, pdu_len).map(|x| {
+                x.map(|res| {
+                    let frame_location = FrameLocation {
+                        start: drop_cnt,
+                        size: pdu_len + 3, // TODO: use 'const FOO:usize = 3;'
+                    };
+                    (res, frame_location)
+                })
+            })
         })
         .or_else(|err| {
-            let pdu_type = match decoder_type {
-                Request => "request",
-                Response => "response",
-            };
             if drop_cnt + 1 >= MAX_FRAME_LEN {
                 log::error!(
                     "Giving up to decode frame after dropping {drop_cnt} byte(s): {:X?}",
@@ -75,7 +68,13 @@ pub fn decode(
                 );
                 return Err(err);
             }
-            log::warn!("Failed to decode {pdu_type} frame: {err}");
+            log::warn!(
+                "Failed to decode {} frame: {err}",
+                match decoder_type {
+                    Request => "request",
+                    Response => "response",
+                }
+            );
             drop_cnt += 1;
             retry = true;
             Ok(None)

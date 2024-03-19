@@ -5,22 +5,21 @@ use super::*;
 pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
     decode(DecoderType::Request, buf)
         .and_then(|frame| {
-            if let Some((DecodedFrame { slave, pdu }, _frame_pos)) = frame {
-                let hdr = Header { slave };
-                // Decoding of the PDU should are unlikely to fail due
-                // to transmission errors, because the frame's bytes
-                // have already been verified with the CRC.
-                Request::try_from(pdu)
-                    .map(RequestPdu)
-                    .map(|pdu| Some(RequestAdu { hdr, pdu }))
-                    .map_err(|err| {
-                        // Unrecoverable error
-                        log::error!("Failed to decode request PDU: {err}");
-                        err
-                    })
-            } else {
-                Ok(None)
-            }
+            let Some((DecodedFrame { slave, pdu }, _frame_pos)) = frame else {
+                return Ok(None);
+            };
+            let hdr = Header { slave };
+            // Decoding of the PDU should are unlikely to fail due
+            // to transmission errors, because the frame's bytes
+            // have already been verified with the CRC.
+            Request::try_from(pdu)
+                .map(RequestPdu)
+                .map(|pdu| Some(RequestAdu { hdr, pdu }))
+                .map_err(|err| {
+                    // Unrecoverable error
+                    log::error!("Failed to decode request PDU: {err}");
+                    err
+                })
         })
         .map_err(|_| {
             // Decoding the transport frame is non-destructive and must
