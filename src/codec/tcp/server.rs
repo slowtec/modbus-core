@@ -3,6 +3,9 @@ use super::*;
 
 /// Decode an TCP request.
 pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
+    if buf.is_empty() {
+        return Ok(None);
+    }
     let frame = decode(DecoderType::Request, buf)?;
     let Some((decoded_frame, _frame_pos)) = frame else {
         return Ok(None);
@@ -31,6 +34,9 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
 
 // Decode a TCP response
 pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
+    if buf.is_empty() {
+        return Err(Error::BufferSize);
+    }
     decode(DecoderType::Response, buf)
         .and_then(|frame| {
             let Some((decoded_frame, _frame_pos)) = frame else {

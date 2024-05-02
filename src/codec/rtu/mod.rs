@@ -34,6 +34,10 @@ pub fn decode(
     use DecoderType::{Request, Response};
     let mut drop_cnt = 0;
 
+    if buf.is_empty() {
+        return Err(Error::BufferSize);
+    }
+
     loop {
         let mut retry = false;
         if drop_cnt + 1 >= buf.len() {
@@ -89,6 +93,10 @@ pub fn decode(
 /// Extract a PDU frame out of a buffer.
 #[allow(clippy::similar_names)]
 pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>> {
+    if buf.is_empty() {
+        return Err(Error::BufferSize);
+    }
+
     let adu_len = 1 + pdu_len;
     if buf.len() >= adu_len + 2 {
         let (adu_buf, buf) = buf.split_at(adu_len);
