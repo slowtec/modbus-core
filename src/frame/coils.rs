@@ -11,6 +11,9 @@ pub struct Coils<'c> {
 impl<'c> Coils<'c> {
     /// Pack coils defined by an bool slice into a byte buffer.
     pub fn from_bools(bools: &[bool], target: &'c mut [u8]) -> Result<Self, Error> {
+        if bools.is_empty() {
+            return Err(Error::BufferSize);
+        }
         pack_coils(bools, target)?;
         Ok(Coils {
             data: target,
