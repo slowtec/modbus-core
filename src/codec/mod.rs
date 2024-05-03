@@ -215,7 +215,7 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
 }
 
 /// Encode a struct into a buffer.
-trait Encode {
+pub trait Encode {
     fn encode(&self, buf: &mut [u8]) -> Result<usize>;
 }
 
