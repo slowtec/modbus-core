@@ -3,6 +3,9 @@ use super::*;
 
 /// Decode an RTU request.
 pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
+    if buf.is_empty() {
+        return Ok(None);
+    }
     decode(DecoderType::Request, buf)
         .and_then(|frame| {
             let Some((DecodedFrame { slave, pdu }, _frame_pos)) = frame else {

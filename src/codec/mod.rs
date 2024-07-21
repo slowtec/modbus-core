@@ -50,6 +50,9 @@ impl TryFrom<&[u8]> for ExceptionResponse {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Self> {
+        if bytes.is_empty() {
+            return Err(Error::BufferSize);
+        }
         let fn_err_code = bytes[0];
         if fn_err_code < 0x80 {
             return Err(Error::ExceptionFnCode(fn_err_code));
@@ -156,7 +159,9 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
 
     fn try_from(bytes: &'r [u8]) -> Result<Self> {
         use FunctionCode as F;
-
+        if bytes.is_empty() {
+            return Err(Error::BufferSize);
+        }
         let fn_code = bytes[0];
         if bytes.len() < min_response_pdu_len(FunctionCode::new(fn_code)) {
             return Err(Error::BufferSize);
@@ -327,6 +332,9 @@ impl<'r> Encode for RequestPdu<'r> {
 
 impl<'r> Encode for ResponsePdu<'r> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
+        if buf.is_empty() {
+            return Err(Error::BufferSize);
+        }
         match self.0 {
             Ok(res) => res.encode(buf),
             Err(e) => e.encode(buf),
@@ -336,6 +344,9 @@ impl<'r> Encode for ResponsePdu<'r> {
 
 impl Encode for ExceptionResponse {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
+        if buf.is_empty() {
+            return Err(Error::BufferSize);
+        }
         let [code, ex]: [u8; 2] = (*self).into();
         buf[0] = code;
         buf[1] = ex;
