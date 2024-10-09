@@ -35,6 +35,10 @@ pub fn decode(
     use DecoderType::{Request, Response};
     let mut drop_cnt = 0;
 
+    if buf.is_empty() {
+        return Err(Error::BufferSize);
+    }
+
     loop {
         let mut retry = false;
         if drop_cnt + 1 >= buf.len() {
@@ -90,6 +94,9 @@ pub fn decode(
 
 /// Extract a PDU frame out of a buffer.
 pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>> {
+    if buf.is_empty() {
+        return Err(Error::BufferSize);
+    }
     let adu_len = 7 + pdu_len;
     if buf.len() >= adu_len {
         let (adu_buf, _next_frame) = buf.split_at(adu_len);

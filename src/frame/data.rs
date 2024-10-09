@@ -11,7 +11,7 @@ pub struct Data<'d> {
 impl<'d> Data<'d> {
     /// Pack words (u16 values) into a byte buffer.
     pub fn from_words(words: &[u16], target: &'d mut [u8]) -> Result<Self, Error> {
-        if words.len() * 2 > target.len() {
+        if (words.len() * 2 > target.len()) || words.is_empty() {
             return Err(Error::BufferSize);
         }
         for (i, w) in words.iter().enumerate() {
