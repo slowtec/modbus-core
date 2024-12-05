@@ -314,6 +314,9 @@ impl<'r> Encode for Response<'r> {
                     buf[idx + 1] = *d;
                 }
             }
+            Self::ReadExceptionStatus(error ) => {
+                buf[1] = *error;
+            }
             #[cfg(feature = "rtu")]
             _ => {
                 // TODO:
