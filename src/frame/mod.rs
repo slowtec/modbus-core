@@ -370,6 +370,7 @@ impl<'r> Response<'r> {
             | Self::ReadHoldingRegisters(words)
             | Self::ReadWriteMultipleRegisters(words) => 2 + words.len() * 2,
             Self::Custom(_, data) => 1 + data.len(),
+            Self::ReadExceptionStatus(_) => 2,
             #[cfg(feature = "rtu")]
             _ => unimplemented!(), // TODO
         }
