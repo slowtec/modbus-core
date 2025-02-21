@@ -3,6 +3,7 @@
 use super::*;
 use byteorder::{BigEndian, ByteOrder};
 
+pub mod client;
 pub mod server;
 pub use crate::frame::rtu::*;
 
