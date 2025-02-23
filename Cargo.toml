@@ -1,7 +1,7 @@
 [package]
 name = "modbus-core"
 description = "Modbus base library"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["slowtec GmbH", "Markus Kohlhase <markus.kohlhase@slowtec.de>"]
 license = "MIT/Apache-2.0"
 keywords = ["fieldbus", "modbus", "hardware", "automation"]
@@ -9,6 +9,9 @@ homepage = "https://github.com/slowtec/modbus-core"
 repository = "https://github.com/slowtec/modbus-core"
 edition = "2021"
 rust-version = "1.65"
+
+[package.metadata.docs.rs]
+all-features = true
 
 [dependencies]
 log = "0.4"
