@@ -224,7 +224,7 @@ pub trait Encode {
     fn encode(&self, buf: &mut [u8]) -> Result<usize>;
 }
 
-impl<'r> Encode for Request<'r> {
+impl Encode for Request<'_> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
@@ -282,7 +282,7 @@ impl<'r> Encode for Request<'r> {
     }
 }
 
-impl<'r> Encode for Response<'r> {
+impl Encode for Response<'_> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
         if buf.len() < self.pdu_len() {
             return Err(Error::BufferSize);
@@ -327,13 +327,13 @@ impl<'r> Encode for Response<'r> {
     }
 }
 
-impl<'r> Encode for RequestPdu<'r> {
+impl Encode for RequestPdu<'_> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
         self.0.encode(buf)
     }
 }
 
-impl<'r> Encode for ResponsePdu<'r> {
+impl Encode for ResponsePdu<'_> {
     fn encode(&self, buf: &mut [u8]) -> Result<usize> {
         if buf.is_empty() {
             return Err(Error::BufferSize);

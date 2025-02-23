@@ -66,7 +66,7 @@ pub struct CoilsIter<'c> {
     coils: Coils<'c>,
 }
 
-impl<'c> Iterator for CoilsIter<'c> {
+impl Iterator for CoilsIter<'_> {
     type Item = Coil;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -91,11 +91,7 @@ impl<'c> IntoIterator for Coils<'c> {
 /// Turn a bool into a u16 coil value
 #[must_use]
 pub const fn bool_to_u16_coil(state: bool) -> u16 {
-    if state {
-        0xFF00
-    } else {
-        0x0000
-    }
+    if state { 0xFF00 } else { 0x0000 }
 }
 
 /// Turn a u16 coil value into a boolean value.

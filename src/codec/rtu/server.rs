@@ -18,10 +18,9 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
             Request::try_from(pdu)
                 .map(RequestPdu)
                 .map(|pdu| Some(RequestAdu { hdr, pdu }))
-                .map_err(|err| {
+                .inspect_err(|&err| {
                     // Unrecoverable error
                     log::error!("Failed to decode request PDU: {err}");
-                    err
                 })
         })
         .map_err(|_| {

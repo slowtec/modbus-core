@@ -59,7 +59,7 @@ pub struct DataIter<'d> {
     data: Data<'d>,
 }
 
-impl<'d> Iterator for DataIter<'d> {
+impl Iterator for DataIter<'_> {
     type Item = Word;
 
     fn next(&mut self) -> Option<Self::Item> {

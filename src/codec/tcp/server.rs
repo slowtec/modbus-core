@@ -25,10 +25,9 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
     Request::try_from(pdu)
         .map(RequestPdu)
         .map(|pdu| Some(RequestAdu { hdr, pdu }))
-        .map_err(|err| {
+        .inspect_err(|&err| {
             // Unrecoverable error
             log::error!("Failed to decode request PDU: {err}");
-            err
         })
 }
 
@@ -60,10 +59,9 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
                 .or_else(|_| ExceptionResponse::try_from(pdu).map(Err))
                 .map(ResponsePdu)
                 .map(|pdu| Some(ResponseAdu { hdr, pdu }))
-                .map_err(|err| {
+                .inspect_err(|&err| {
                     // Unrecoverable error
                     log::error!("Failed to decode response PDU: {err}");
-                    err
                 })
         })
         .map_err(|_| {

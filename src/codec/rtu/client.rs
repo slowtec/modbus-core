@@ -36,10 +36,9 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
                 .map(|er| ResponsePdu(Err(er)))
                 .or_else(|_| Response::try_from(pdu).map(|r| ResponsePdu(Ok(r))))
                 .map(|pdu| Some(ResponseAdu { hdr, pdu }))
-                .map_err(|err| {
+                .inspect_err(|&err| {
                     // Unrecoverable error
                     log::error!("Failed to decode Response PDU: {err}");
-                    err
                 })
         })
         .map_err(|_| {

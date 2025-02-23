@@ -335,7 +335,7 @@ impl fmt::Display for Exception {
     }
 }
 
-impl<'r> Request<'r> {
+impl Request<'_> {
     /// Number of bytes required for a serialized PDU frame.
     #[must_use]
     pub fn pdu_len(&self) -> usize {
@@ -356,7 +356,7 @@ impl<'r> Request<'r> {
     }
 }
 
-impl<'r> Response<'r> {
+impl Response<'_> {
     /// Number of bytes required for a serialized PDU frame.
     #[must_use]
     pub fn pdu_len(&self) -> usize {
