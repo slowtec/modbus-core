@@ -49,6 +49,10 @@ impl<'d> Data<'d> {
         let idx = idx * 2;
         Some(BigEndian::read_u16(&self.data[idx..idx + 2]))
     }
+
+    pub fn payload(&self) -> &[u8] {
+        self.data
+    }
 }
 
 /// Data iterator
