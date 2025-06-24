@@ -11,6 +11,7 @@ use byteorder::{BigEndian, ByteOrder};
 /// A Modbus function code.
 ///
 /// It is represented by an unsigned 8 bit integer.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FunctionCode {
     /// Modbus Function Code: `01` (`0x01`).
@@ -157,6 +158,7 @@ pub(crate) type Quantity = u16;
 type RawData<'r> = &'r [u8];
 
 /// A request represents a message from the client (master) to the server (slave).
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Request<'r> {
     ReadCoils(Address, Quantity),
@@ -191,6 +193,7 @@ pub enum Request<'r> {
 }
 
 /// A server (slave) exception response.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExceptionResponse {
     pub function: FunctionCode,
@@ -198,10 +201,12 @@ pub struct ExceptionResponse {
 }
 
 /// Represents a message from the client (slave) to the server (master).
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RequestPdu<'r>(pub Request<'r>);
 
 /// Represents a message from the server (slave) to the client (master).
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResponsePdu<'r>(pub Result<Response<'r>, ExceptionResponse>);
 
@@ -213,6 +218,7 @@ type EventCount = u16;
 type MessageCount = u16;
 
 /// The response data of a successfull request.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Response<'r> {
     ReadCoils(Coils<'r>),
@@ -305,6 +311,7 @@ impl<'r> From<Response<'r>> for FunctionCode {
 }
 
 /// A server (slave) exception.
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Exception {
     IllegalFunction = 0x01,
@@ -318,9 +325,9 @@ pub enum Exception {
     GatewayTargetDevice = 0x0B,
 }
 
-impl fmt::Display for Exception {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let desc = match *self {
+impl Exception{
+    fn get_name(&self) -> &'static str {
+        match *self {
             Self::IllegalFunction => "Illegal function",
             Self::IllegalDataAddress => "Illegal data address",
             Self::IllegalDataValue => "Illegal data value",
@@ -330,10 +337,19 @@ impl fmt::Display for Exception {
             Self::MemoryParityError => "Memory parity error",
             Self::GatewayPathUnavailable => "Gateway path unavailable",
             Self::GatewayTargetDevice => "Gateway target device failed to respond",
-        };
-        write!(f, "{desc}")
+        }
     }
 }
+
+impl fmt::Display for Exception {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.get_name()) }
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for Exception {
+    fn format(&self, fmt: defmt::Formatter) { defmt::write!(fmt, "{}", self.get_name()) }
+}
+
 
 impl Request<'_> {
     /// Number of bytes required for a serialized PDU frame.

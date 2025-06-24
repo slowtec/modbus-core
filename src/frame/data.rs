@@ -2,6 +2,7 @@ use super::*;
 use crate::error::*;
 
 /// Modbus data (u16 values)
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Data<'d> {
     pub(crate) data: RawData<'d>,
@@ -57,6 +58,7 @@ impl<'d> Data<'d> {
 
 /// Data iterator
 // TODO: crate a generic iterator
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataIter<'d> {
     cnt: usize,
