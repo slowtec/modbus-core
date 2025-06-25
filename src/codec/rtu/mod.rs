@@ -12,7 +12,7 @@ pub use crate::frame::rtu::*;
 const MAX_FRAME_LEN: usize = 256;
 
 /// An extracted RTU PDU frame.
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DecodedFrame<'a> {
     pub slave: SlaveId,
@@ -20,7 +20,7 @@ pub struct DecodedFrame<'a> {
 }
 
 /// The location of all bytes that belong to the frame.
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FrameLocation {
     /// The index where the frame starts

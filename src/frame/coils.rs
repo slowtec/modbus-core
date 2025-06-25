@@ -2,7 +2,7 @@ use super::*;
 use crate::error::*;
 
 /// Packed coils
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Coils<'c> {
     pub(crate) data: RawData<'c>,
@@ -61,7 +61,7 @@ impl<'c> Coils<'c> {
 
 /// Coils iterator.
 // TODO: crate an generic iterator
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CoilsIter<'c> {
     cnt: usize,
