@@ -13,17 +13,22 @@ rust-version = "1.85"
 [package.metadata.docs.rs]
 all-features = true
 
-[dependencies]
-log = "0.4.26"
-byteorder = { version =  "1.5.0", default-features = false }
-defmt = {version = "1.0.1", optional = true}
-
 [features]
 default = ["tcp", "rtu"]
 tcp = []
 rtu = []
 std = ["byteorder/std"]
 defmt = ["dep:defmt"]
+
+[dependencies]
+log = { version = "0.4.26" }
+byteorder = { version = "1.5.0", default-features = false }
+
+[target.'cfg(target_os = "none")'.dependencies]
+defmt = { version = "1.0.1", optional = true }
+
+
+
 
 [badges]
 maintenance = { status = "actively-developed" }

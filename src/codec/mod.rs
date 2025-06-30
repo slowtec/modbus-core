@@ -5,7 +5,7 @@ pub mod rtu;
 pub mod tcp;
 
 /// The type of decoding
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DecoderType {
     Request,
