@@ -49,7 +49,7 @@ impl fmt::Display for Error {
     }
 }
 
-#[cfg(feature = "defmt")]
+#[cfg(all(feature = "defmt", target_os = "none"))]
 impl defmt::Format for Error {
     fn format(&self, f: defmt::Formatter) {
         match self {

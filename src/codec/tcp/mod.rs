@@ -12,7 +12,7 @@ pub use crate::frame::tcp::*;
 const MAX_FRAME_LEN: usize = 256;
 
 /// An extracted TCP PDU frame.
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DecodedFrame<'a> {
     pub transaction_id: TransactionId,
@@ -21,7 +21,7 @@ pub struct DecodedFrame<'a> {
 }
 
 /// The location of all bytes that belong to the frame.
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FrameLocation {
     /// The index where the frame starts
