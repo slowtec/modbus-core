@@ -325,7 +325,7 @@ pub enum Exception {
     GatewayTargetDevice = 0x0B,
 }
 
-impl Exception{
+impl Exception {
     fn get_name(&self) -> &'static str {
         match *self {
             Self::IllegalFunction => "Illegal function",
@@ -342,14 +342,17 @@ impl Exception{
 }
 
 impl fmt::Display for Exception {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "{}", self.get_name()) }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.get_name())
+    }
 }
 
 #[cfg(feature = "defmt")]
 impl defmt::Format for Exception {
-    fn format(&self, fmt: defmt::Formatter) { defmt::write!(fmt, "{}", self.get_name()) }
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "{}", self.get_name())
+    }
 }
-
 
 impl Request<'_> {
     /// Number of bytes required for a serialized PDU frame.
@@ -386,6 +389,7 @@ impl Response<'_> {
             | Self::ReadHoldingRegisters(words)
             | Self::ReadWriteMultipleRegisters(words) => 2 + words.len() * 2,
             Self::Custom(_, data) => 1 + data.len(),
+            #[cfg(feature = "rtu")]
             Self::ReadExceptionStatus(_) => 2,
             #[cfg(feature = "rtu")]
             _ => unimplemented!(), // TODO
