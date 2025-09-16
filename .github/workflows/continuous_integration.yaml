@@ -37,11 +37,17 @@ jobs:
         with:
           profile: minimal
 
-      - name: Test workspace with all features enabled
+      - name: Install all-features cargo subcommand
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --workspace --all-features
+          command: install
+          args: cargo-all-features
+
+      - name: Test workspace with all feature combinations
+        uses: actions-rs/cargo@v1
+        with:
+          command: test-all-features
+          args: --workspace
 
       - name: Build workspace documentation with all features enabled
         uses: actions-rs/cargo@v1
