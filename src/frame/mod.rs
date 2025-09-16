@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use core::fmt;
 
 mod coils;
@@ -217,7 +220,7 @@ type EventCount = u16;
 #[cfg(feature = "rtu")]
 type MessageCount = u16;
 
-/// The response data of a successfull request.
+/// The response data of a successful request.
 #[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Response<'r> {
@@ -326,8 +329,8 @@ pub enum Exception {
 }
 
 impl Exception {
-    fn get_name(&self) -> &'static str {
-        match *self {
+    const fn get_name(self) -> &'static str {
+        match self {
             Self::IllegalFunction => "Illegal function",
             Self::IllegalDataAddress => "Illegal data address",
             Self::IllegalDataValue => "Illegal data value",
@@ -357,7 +360,7 @@ impl defmt::Format for Exception {
 impl Request<'_> {
     /// Number of bytes required for a serialized PDU frame.
     #[must_use]
-    pub fn pdu_len(&self) -> usize {
+    pub const fn pdu_len(&self) -> usize {
         match *self {
             Self::ReadCoils(_, _)
             | Self::ReadDiscreteInputs(_, _)
@@ -378,7 +381,7 @@ impl Request<'_> {
 impl Response<'_> {
     /// Number of bytes required for a serialized PDU frame.
     #[must_use]
-    pub fn pdu_len(&self) -> usize {
+    pub const fn pdu_len(&self) -> usize {
         match *self {
             Self::ReadCoils(coils) | Self::ReadDiscreteInputs(coils) => 2 + coils.packed_len(),
             Self::WriteSingleCoil(_) => 3,

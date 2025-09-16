@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Modbus TCP client (master) specific functions.
 use super::*;
 
@@ -11,15 +14,15 @@ pub fn encode_request(adu: RequestAdu, buf: &mut [u8]) -> Result<usize> {
     if buf.len() < len + 7 {
         return Err(Error::BufferSize);
     }
-    (&mut buf[..2]).copy_from_slice(&hdr.transaction_id.to_be_bytes());
-    (&mut buf[2..4]).fill(0);
-    (&mut buf[4..6]).copy_from_slice(&(1 + len as u16).to_be_bytes());
+    buf[..2].copy_from_slice(&hdr.transaction_id.to_be_bytes());
+    buf[2..4].fill(0);
+    buf[4..6].copy_from_slice(&(1 + len as u16).to_be_bytes());
     buf[6] = hdr.unit_id;
     Ok(len + 7)
 }
 
 /// Decode an TCP response.
-pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
+pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
     if buf.is_empty() {
         return Ok(None);
     }

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Modbus RTU client (master) specific functions.
 use super::*;
 
@@ -18,7 +21,7 @@ pub fn encode_request(adu: RequestAdu, buf: &mut [u8]) -> Result<usize> {
 }
 
 /// Decode an RTU response.
-pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
+pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
     if buf.is_empty() {
         return Ok(None);
     }

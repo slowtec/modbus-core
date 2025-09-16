@@ -1,0 +1,99 @@
+# SPDX-FileCopyrightText: Copyright (c) 2017-2025 slowtec GmbH <post@slowtec.de>
+# SPDX-License-Identifier: CC0-1.0
+
+default_stages:
+  # Prevent that hooks run twice, triggered by both
+  # the Git commit-msg and the pre-commit hook.
+  - commit
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: forbid-new-submodules
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.16.0
+    hooks:
+      - id: commitlint
+        stages:
+          - commit-msg
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.13.0
+    hooks:
+      - id: markdownlint-cli2
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args: [--ignore-words=.codespellignore]
+  - repo: https://github.com/sirosen/check-jsonschema
+    rev: 0.28.6
+    hooks:
+      - id: check-github-actions
+      - id: check-github-workflows
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        types_or:
+          - yaml
+          - markdown
+  # https://reuse.software
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v3.1.0a1
+    hooks:
+      - id: reuse
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        args: [--all, --]
+      - id: clippy
+        name: clippy --all-features
+        args:
+          [
+            --locked,
+            --workspace,
+            --all-features,
+            --all-targets,
+            --,
+            -D,
+            warnings,
+          ]
+      - id: clippy
+        name: clippy --no-default-features
+        args:
+          [
+            --locked,
+            --workspace,
+            --no-default-features,
+            --all-targets,
+            --,
+            -D,
+            warnings,
+          ]
+  - repo: local
+    hooks:
+      - id: cargo-doc
+        name: cargo-doc
+        entry: env RUSTDOCFLAGS=-Dwarnings cargo
+        language: system
+        pass_filenames: false
+        args: [doc, --locked, --workspace, --all-features, --no-deps]

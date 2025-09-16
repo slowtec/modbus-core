@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Modbus RTU
 
 use super::*;
@@ -33,7 +36,7 @@ pub struct FrameLocation {
 pub fn decode(
     decoder_type: DecoderType,
     buf: &[u8],
-) -> Result<Option<(DecodedFrame, FrameLocation)>> {
+) -> Result<Option<(DecodedFrame<'_>, FrameLocation)>> {
     use DecoderType::{Request, Response};
     let mut drop_cnt = 0;
 
@@ -95,7 +98,7 @@ pub fn decode(
 
 /// Extract a PDU frame out of a buffer.
 #[allow(clippy::similar_names)]
-pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame>> {
+pub fn extract_frame(buf: &[u8], pdu_len: usize) -> Result<Option<DecodedFrame<'_>>> {
     if buf.is_empty() {
         return Err(Error::BufferSize);
     }
