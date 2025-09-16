@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use crate::{error::*, frame::*};
 use byteorder::{BigEndian, ByteOrder};
 
@@ -730,7 +733,7 @@ mod tests {
                 assert_eq!(data.get(1), Some(0xEF12));
             } else {
                 unreachable!()
-            };
+            }
         }
 
         #[test]
@@ -756,7 +759,7 @@ mod tests {
                 assert_eq!(data.get(1), Some(0xEF12));
             } else {
                 unreachable!()
-            };
+            }
         }
 
         #[test]

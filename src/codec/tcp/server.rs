@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Modbus TCP server (slave) specific functions.
 use super::*;
 
-/// Decode an TCP request.
-pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
+/// Decode an TCP request.<'_>
+pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
     if buf.is_empty() {
         return Ok(None);
     }
@@ -32,7 +35,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
 }
 
 // Decode a TCP response
-pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu>> {
+pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
     if buf.is_empty() {
         return Err(Error::BufferSize);
     }

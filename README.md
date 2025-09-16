@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de> -->
+<!-- SPDX-License-Identifier: MIT OR Apache-2.0 -->
+
 # modbus-core
 
 A no-std Rust modbus library.

@@ -1,9 +1,12 @@
+# SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
 [package]
 name = "modbus-core"
 description = "Modbus base library"
 version = "0.1.1"
 authors = ["slowtec GmbH", "Markus Kohlhase <markus.kohlhase@slowtec.de>"]
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 keywords = ["fieldbus", "modbus", "hardware", "automation"]
 homepage = "https://github.com/slowtec/modbus-core"
 repository = "https://github.com/slowtec/modbus-core"
@@ -21,14 +24,11 @@ std = ["byteorder/std"]
 defmt = ["dep:defmt"]
 
 [dependencies]
-log = { version = "0.4.26" }
+log = { version = "0.4.28" }
 byteorder = { version = "1.5.0", default-features = false }
 
 [target.'cfg(target_os = "none")'.dependencies]
 defmt = { version = "1.0.1", optional = true }
-
-
-
 
 [badges]
 maintenance = { status = "actively-developed" }

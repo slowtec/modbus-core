@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+# SPDX-License-Identifier: CC0-1.0
+
 name: Continuous integration
 
 on:
@@ -21,7 +24,7 @@ jobs:
           - x86_64-apple-darwin
           - x86_64-pc-windows-msvc
         include:
-          - target:  x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-gnu
             runner_os: ubuntu-latest
           - target: x86_64-apple-darwin
             runner_os: macos-latest
@@ -29,13 +32,13 @@ jobs:
             runner_os: windows-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
+          targets: ${{ matrix.target }}
+
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Install all-features cargo subcommand
         uses: actions-rs/cargo@v1

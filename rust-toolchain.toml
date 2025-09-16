@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2018-2024 slowtec GmbH <post@slowtec.de>
+# SPDX-License-Identifier: CC0-1.0
+
+[toolchain]
+channel = "stable"
+profile = "minimal"
+components = [ "rustfmt", "clippy" ]

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use super::*;
 use crate::error::*;
 
@@ -51,7 +54,8 @@ impl<'d> Data<'d> {
         Some(BigEndian::read_u16(&self.data[idx..idx + 2]))
     }
 
-    pub fn payload(&self) -> &[u8] {
+    #[must_use]
+    pub const fn payload(&self) -> &[u8] {
         self.data
     }
 }

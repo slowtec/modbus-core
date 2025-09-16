@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use super::*;
 use crate::error::*;
 
@@ -108,7 +111,7 @@ pub const fn u16_coil_to_bool(coil: u16) -> Result<bool, Error> {
 /// Calculate the number of bytes required for a given number of coils.
 #[must_use]
 pub const fn packed_coils_len(bitcount: usize) -> usize {
-    (bitcount + 7) / 8
+    bitcount.div_ceil(8)
 }
 
 ///  Pack coils into a byte array.

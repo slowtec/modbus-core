@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 //! Modbus RTU server (slave) specific functions.
 use super::*;
 
 /// Decode an RTU request.
-pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
+pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
     if buf.is_empty() {
         return Ok(None);
     }
@@ -31,7 +34,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu>> {
 }
 
 /// Encode an RTU response.
-pub fn encode_response(adu: ResponseAdu, buf: &mut [u8]) -> Result<usize> {
+pub fn encode_response(adu: ResponseAdu<'_>, buf: &mut [u8]) -> Result<usize> {
     let ResponseAdu { hdr, pdu } = adu;
     if buf.len() < 2 {
         return Err(Error::BufferSize);

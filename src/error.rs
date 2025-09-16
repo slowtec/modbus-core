@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
+// SPDX-License-Identifier: MIT OR Apache-2.0
+
 use core::fmt;
 
 /// modbus-core Error
@@ -43,7 +46,7 @@ impl fmt::Display for Error {
                 "Length Mismatch: Length Field: {length_field}, PDU Len + 1: {pdu_len}"
             ),
             Self::ProtocolNotModbus(protocol_id) => {
-                write!(f, "Protocol not Modbus(0), recieved {protocol_id} instead")
+                write!(f, "Protocol not Modbus(0), received {protocol_id} instead")
             }
         }
     }
@@ -56,21 +59,31 @@ impl defmt::Format for Error {
             Self::CoilValue(v) => defmt::write!(f, "Invalid coil value: {}", v),
             Self::BufferSize => defmt::write!(f, "Invalid buffer size"),
             Self::FnCode(fn_code) => defmt::write!(f, "Invalid function code: {=u8:#04x}", fn_code),
-            Self::ExceptionCode(code) => defmt::write!(f, "Invalid exception code: {=u8:#04x}", code),
+            Self::ExceptionCode(code) => {
+                defmt::write!(f, "Invalid exception code: {=u8:#04x}", code)
+            }
             Self::ExceptionFnCode(code) => {
                 defmt::write!(f, "Invalid exception function code: {=u8:#04x}", code)
             }
-            Self::Crc(expected, actual) => defmt::write!(f,
+            Self::Crc(expected, actual) => defmt::write!(
+                f,
                 "Invalid CRC: expected = {=u16:#06x}, actual = {=u16:#06x}",
-                expected, actual
+                expected,
+                actual
             ),
             Self::ByteCount(cnt) => defmt::write!(f, "Invalid byte count: {}", cnt),
-            Self::LengthMismatch(length_field, pdu_len) => defmt::write!(f,
+            Self::LengthMismatch(length_field, pdu_len) => defmt::write!(
+                f,
                 "Length Mismatch: Length Field: {}, PDU Len + 1: {}",
-                length_field, pdu_len
+                length_field,
+                pdu_len
             ),
             Self::ProtocolNotModbus(protocol_id) => {
-                defmt::write!(f, "Protocol not Modbus(0), recieved {} instead", protocol_id)
+                defmt::write!(
+                    f,
+                    "Protocol not Modbus(0), received {} instead",
+                    protocol_id
+                )
             }
         }
     }
