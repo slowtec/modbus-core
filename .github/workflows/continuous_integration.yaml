@@ -43,6 +43,9 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install all-features cargo subcommand
+        run: cargo install cargo-all-features
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -66,6 +69,12 @@ jobs:
         run: >-
           cargo test --workspace --locked --target ${{ matrix.target }} --all-features --all-targets
           -- --nocapture --quiet
+
+      - name: Test workspace with all feature combinations
+        uses: actions-rs/cargo@v1
+        with:
+          command: all-features
+          args: test --workspace
 
       - name: Build workspace documentation with all features enabled
         run: cargo doc --workspace --locked --target ${{ matrix.target }} --all-features
