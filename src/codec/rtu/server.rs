@@ -23,10 +23,10 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
                 .map(|pdu| Some(RequestAdu { hdr, pdu }));
 
             #[cfg(feature = "log")]
-            request.inspect_err(|&err| {
+            if let Err(error) = request {
                 // Unrecoverable error
-                log::error!("Failed to decode request PDU: {err}");
-            });
+                log::error!("Failed to decode request PDU: {error}");
+            }
             request
         })
         .map_err(|_| {
