@@ -72,12 +72,14 @@ pub fn decode(
         })
         .or_else(|err| {
             if drop_cnt + 1 >= MAX_FRAME_LEN {
+                #[cfg(feature = "log")]
                 log::error!(
                     "Giving up to decode frame after dropping {drop_cnt} byte(s): {:X?}",
                     &buf[0..drop_cnt]
                 );
                 return Err(err);
             }
+            #[cfg(feature = "log")]
             log::warn!(
                 "Failed to decode {} frame: {err}",
                 match decoder_type {

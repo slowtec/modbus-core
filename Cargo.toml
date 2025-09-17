@@ -22,9 +22,11 @@ tcp = []
 rtu = []
 std = ["byteorder/std"]
 defmt = ["dep:defmt"]
+# Enable decoding error logging.
+log = ["dep:log"]
 
 [dependencies]
-log = { version = "0.4.28" }
+log = { version = "0.4.28", optional = true }
 byteorder = { version = "1.5.0", default-features = false }
 
 [target.'cfg(target_os = "none")'.dependencies]

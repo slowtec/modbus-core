@@ -75,18 +75,22 @@ pub fn decode(
             }
         })
         .or_else(|err| {
-            let pdu_type = match decoder_type {
-                Request => "request",
-                Response => "response",
-            };
             if drop_cnt + 1 >= MAX_FRAME_LEN {
+                #[cfg(feature = "log")]
                 log::error!(
                     "Giving up to decode frame after dropping {drop_cnt} byte(s): {:X?}",
                     &buf[0..drop_cnt]
                 );
                 return Err(err);
             }
-            log::warn!("Failed to decode {pdu_type} frame: {err}");
+            #[cfg(feature = "log")]
+            log::warn!(
+                "Failed to decode {pdu_type} frame: {err}",
+                pdu_type = match decoder_type {
+                    Request => "request",
+                    Response => "response",
+                }
+            );
             drop_cnt += 1;
             retry = true;
             Ok(None)
