@@ -12,7 +12,7 @@ pub use crate::frame::rtu::*;
 
 // [MODBUS over Serial Line Specification and Implementation Guide V1.02](http://modbus.org/docs/Modbus_over_serial_line_V1_02.pdf), page 13
 // "The maximum size of a MODBUS RTU frame is 256 bytes."
-const MAX_FRAME_LEN: usize = 256;
+pub const MAX_FRAME_LEN: usize = 256;
 
 /// An extracted RTU PDU frame.
 #[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
