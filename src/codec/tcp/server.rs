@@ -29,10 +29,10 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
         .map(RequestPdu)
         .map(|pdu| Some(RequestAdu { hdr, pdu }));
     #[cfg(feature = "log")]
-    request.inspect_err(|&err| {
+    if let Err(error) = request {
         // Unrecoverable error
-        log::error!("Failed to decode request PDU: {err}");
-    });
+        log::error!("Failed to decode request PDU: {error}");
+    }
     request
 }
 
@@ -64,10 +64,10 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
                 .map(ResponsePdu)
                 .map(|pdu| Some(ResponseAdu { hdr, pdu }));
             #[cfg(feature = "log")]
-            response.inspect_err(|&err| {
+            if let Err(error) = response {
                 // Unrecoverable error
-                log::error!("Failed to decode response PDU: {err}");
-            });
+                log::error!("Failed to decode response PDU: {error}");
+            }
             response
         })
         .map_err(|_| {
