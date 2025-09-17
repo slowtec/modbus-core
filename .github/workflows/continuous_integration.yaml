@@ -49,8 +49,8 @@ jobs:
       - name: Test workspace with all feature combinations
         uses: actions-rs/cargo@v1
         with:
-          command: test-all-features
-          args: --workspace
+          command: all-features
+          args: test --workspace
 
       - name: Build workspace documentation with all features enabled
         uses: actions-rs/cargo@v1
