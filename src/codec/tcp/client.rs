@@ -46,15 +46,16 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
             // Decoding of the PDU should are unlikely to fail due
             // to transmission errors, because the frame's bytes
             // have already been verified with the CRC.
-
-            ExceptionResponse::try_from(pdu)
+            let response = ExceptionResponse::try_from(pdu)
                 .map(|er| ResponsePdu(Err(er)))
                 .or_else(|_| Response::try_from(pdu).map(|r| ResponsePdu(Ok(r))))
-                .map(|pdu| Some(ResponseAdu { hdr, pdu }))
-                .inspect_err(|&err| {
-                    // Unrecoverable error
-                    log::error!("Failed to decode Response PDU: {err}");
-                })
+                .map(|pdu| Some(ResponseAdu { hdr, pdu }));
+            #[cfg(feature = "log")]
+            response.inspect_err(|&err| {
+                // Unrecoverable error
+                log::error!("Failed to decode Response PDU: {err}");
+            });
+            response
         })
         .map_err(|_| {
             // Decoding the transport frame is non-destructive and must
