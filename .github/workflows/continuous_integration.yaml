@@ -1,7 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
 # SPDX-License-Identifier: CC0-1.0
 
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+
 name: Continuous integration
+
+permissions:
+  contents: read
 
 on:
   push:
@@ -10,6 +15,7 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -40,26 +46,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install all-features cargo subcommand
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-all-features
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
 
-      - name: Test workspace with all feature combinations
-        uses: actions-rs/cargo@v1
+      - name: Cache Rust toolchain and build artifacts
+        uses: Swatinem/rust-cache@v2
         with:
-          command: test-all-features
-          args: --workspace
+          # The cache should not be shared between different workflows and jobs.
+          # Two jobs might share the same default target but have different build targets.
+          shared-key: ${{ github.workflow }}-${{ github.job }}-${{ matrix.target }}
+
+      - name: Build tests with all features enabled
+        run: >-
+          cargo test --workspace --locked --target ${{ matrix.target }} --all-features --all-targets
+          --no-run
+
+      - name: Run tests with all features enabled
+        if: matrix.run_tests
+        run: >-
+          cargo test --workspace --locked --target ${{ matrix.target }} --all-features --all-targets
+          -- --nocapture --quiet
 
       - name: Build workspace documentation with all features enabled
-        uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --workspace --all-features
+        run: cargo doc --workspace --locked --target ${{ matrix.target }} --all-features
 
-      - name: Build workspace in release mode with default features
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --workspace --release
+      - name: Build release with default features
+        run: cargo build --locked --target ${{ matrix.target }} --all-targets --profile release
