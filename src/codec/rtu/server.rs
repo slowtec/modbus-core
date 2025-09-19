@@ -18,13 +18,16 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
             // Decoding of the PDU should are unlikely to fail due
             // to transmission errors, because the frame's bytes
             // have already been verified with the CRC.
-            Request::try_from(pdu)
+            let request = Request::try_from(pdu)
                 .map(RequestPdu)
-                .map(|pdu| Some(RequestAdu { hdr, pdu }))
-                .inspect_err(|&err| {
-                    // Unrecoverable error
-                    log::error!("Failed to decode request PDU: {err}");
-                })
+                .map(|pdu| Some(RequestAdu { hdr, pdu }));
+
+            #[cfg(feature = "log")]
+            if let Err(error) = request {
+                // Unrecoverable error
+                log::error!("Failed to decode request PDU: {error}");
+            }
+            request
         })
         .map_err(|_| {
             // Decoding the transport frame is non-destructive and must
