@@ -61,6 +61,7 @@ impl<'d> Data<'d> {
 }
 
 /// The buffer has an invalid size (must be a non null multiple of 2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DataFromBufferError;
 
 impl<'buffer> TryFrom<&'buffer [u8]> for Data<'buffer> {
@@ -202,5 +203,60 @@ mod tests {
         assert!(data_iter.next().is_some());
         assert!(data_iter.next().is_some());
         assert!(data_iter.next().is_none());
+    }
+
+    #[test]
+    fn data_try_from() {
+        assert_eq!(
+            Data::try_from(&[] as &[u8]),
+            Err(DataFromBufferError),
+            "Data from empty buffer is not allowed"
+        );
+        assert_eq!(
+            Data::try_from(&[0u8] as &[u8]),
+            Err(DataFromBufferError),
+            "Data from buffer with length that is not a multiple of 2 is not allowed"
+        );
+        assert_eq!(
+            Data::try_from(&[0u8, 1, 2] as &[u8]),
+            Err(DataFromBufferError),
+            "Data from buffer with length that is not a multiple of 2 is not allowed"
+        );
+        assert_eq!(
+            Data::try_from(&[0u8, 1] as &[u8]),
+            Ok(Data {
+                data: &[0, 1],
+                quantity: 1
+            }),
+            "Data from buffer with even length must succeed"
+        );
+        assert_eq!(
+            Data::try_from(&0x1234_5678_u64.to_be_bytes() as &[u8]),
+            Ok(Data {
+                data: &0x1234_5678_u64.to_be_bytes(),
+                quantity: 4
+            }),
+            "Data from buffer with even length must succeed"
+        );
+    }
+
+    #[test]
+    fn data_from() {
+        assert_eq!(
+            Data::from(&[0u8, 1]),
+            Data {
+                data: &[0, 1],
+                quantity: 1
+            },
+            "Data from buffer with even length must succeed"
+        );
+        assert_eq!(
+            Data::from(&0x1234_5678_u64.to_be_bytes()),
+            Data {
+                data: &0x1234_5678_u64.to_be_bytes(),
+                quantity: 4
+            },
+            "Data from buffer with even length must succeed"
+        );
     }
 }
