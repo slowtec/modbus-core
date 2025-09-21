@@ -71,10 +71,7 @@ jobs:
           -- --nocapture --quiet
 
       - name: Test workspace with all feature combinations
-        uses: actions-rs/cargo@v1
-        with:
-          command: all-features
-          args: test --workspace
+        run: cargo all-features test --workspace
 
       - name: Build workspace documentation with all features enabled
         run: cargo doc --workspace --locked --target ${{ matrix.target }} --all-features
