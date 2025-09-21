@@ -4,7 +4,7 @@
 [package]
 name = "modbus-core"
 description = "Modbus base library"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["slowtec GmbH", "Markus Kohlhase <markus.kohlhase@slowtec.de>"]
 license = "MIT OR Apache-2.0"
 keywords = ["fieldbus", "modbus", "hardware", "automation"]
