@@ -60,6 +60,41 @@ impl<'d> Data<'d> {
     }
 }
 
+/// The buffer has an invalid size (must be a non null multiple of 2).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DataFromBufferError;
+
+impl<'buffer> TryFrom<&'buffer [u8]> for Data<'buffer> {
+    type Error = DataFromBufferError;
+
+    fn try_from(value: &'buffer [u8]) -> Result<Self, Self::Error> {
+        if value.is_empty() || value.len() % 2 != 0 {
+            Err(DataFromBufferError)
+        } else {
+            Ok(Self {
+                data: value,
+                quantity: value.len() / 2,
+            })
+        }
+    }
+}
+
+macro_rules! derive_from_for_data {
+    ($($buffer_length: literal)+) => {
+       $(
+            impl<'buffer> From<&'buffer [u8; $buffer_length]> for Data<'buffer> {
+                fn from(value: &'buffer [u8; $buffer_length]) -> Self {
+                    Self {
+                        data: value,
+                        quantity: $buffer_length / 2,
+                    }
+                }
+            }
+       )+
+    };
+}
+derive_from_for_data!(2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32);
+
 /// Data iterator
 // TODO: crate a generic iterator
 #[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
@@ -168,5 +203,60 @@ mod tests {
         assert!(data_iter.next().is_some());
         assert!(data_iter.next().is_some());
         assert!(data_iter.next().is_none());
+    }
+
+    #[test]
+    fn data_try_from() {
+        assert_eq!(
+            Data::try_from(&[] as &[u8]),
+            Err(DataFromBufferError),
+            "Data from empty buffer is not allowed"
+        );
+        assert_eq!(
+            Data::try_from(&[0u8] as &[u8]),
+            Err(DataFromBufferError),
+            "Data from buffer with length that is not a multiple of 2 is not allowed"
+        );
+        assert_eq!(
+            Data::try_from(&[0u8, 1, 2] as &[u8]),
+            Err(DataFromBufferError),
+            "Data from buffer with length that is not a multiple of 2 is not allowed"
+        );
+        assert_eq!(
+            Data::try_from(&[0u8, 1] as &[u8]),
+            Ok(Data {
+                data: &[0, 1],
+                quantity: 1
+            }),
+            "Data from buffer with even length must succeed"
+        );
+        assert_eq!(
+            Data::try_from(&0x1234_5678_u64.to_be_bytes() as &[u8]),
+            Ok(Data {
+                data: &0x1234_5678_u64.to_be_bytes(),
+                quantity: 4
+            }),
+            "Data from buffer with even length must succeed"
+        );
+    }
+
+    #[test]
+    fn data_from() {
+        assert_eq!(
+            Data::from(&[0u8, 1]),
+            Data {
+                data: &[0, 1],
+                quantity: 1
+            },
+            "Data from buffer with even length must succeed"
+        );
+        assert_eq!(
+            Data::from(&0x1234_5678_u64.to_be_bytes()),
+            Data {
+                data: &0x1234_5678_u64.to_be_bytes(),
+                quantity: 4
+            },
+            "Data from buffer with even length must succeed"
+        );
     }
 }
