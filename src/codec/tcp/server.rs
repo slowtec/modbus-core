@@ -25,13 +25,15 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
     // Decoding of the PDU should are unlikely to fail due
     // to transmission errors, because the frame's bytes
     // have already been verified at the TCP level.
-    Request::try_from(pdu)
+    let request = Request::try_from(pdu)
         .map(RequestPdu)
-        .map(|pdu| Some(RequestAdu { hdr, pdu }))
-        .inspect_err(|&err| {
-            // Unrecoverable error
-            log::error!("Failed to decode request PDU: {err}");
-        })
+        .map(|pdu| Some(RequestAdu { hdr, pdu }));
+    #[cfg(feature = "log")]
+    if let Err(error) = request {
+        // Unrecoverable error
+        log::error!("Failed to decode request PDU: {error}");
+    }
+    request
 }
 
 // Decode a TCP response
@@ -56,16 +58,17 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
             // Decoding of the PDU should are unlikely to fail due
             // to transmission errors, because the frame's bytes
             // have already been verified at the TCP level.
-
-            Response::try_from(pdu)
+            let response = Response::try_from(pdu)
                 .map(Ok)
                 .or_else(|_| ExceptionResponse::try_from(pdu).map(Err))
                 .map(ResponsePdu)
-                .map(|pdu| Some(ResponseAdu { hdr, pdu }))
-                .inspect_err(|&err| {
-                    // Unrecoverable error
-                    log::error!("Failed to decode response PDU: {err}");
-                })
+                .map(|pdu| Some(ResponseAdu { hdr, pdu }));
+            #[cfg(feature = "log")]
+            if let Err(error) = response {
+                // Unrecoverable error
+                log::error!("Failed to decode response PDU: {error}");
+            }
+            response
         })
         .map_err(|_| {
             // Decoding the transport frame is non-destructive and must
