@@ -189,7 +189,10 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
                     _ => unreachable!(),
                 }
             }
-            F::WriteSingleCoil => Self::WriteSingleCoil(BigEndian::read_u16(&bytes[1..])),
+            F::WriteSingleCoil => Self::WriteSingleCoil(
+                BigEndian::read_u16(&bytes[1..3]),
+                u16_coil_to_bool(BigEndian::read_u16(&bytes[3..5]))?,
+            ),
 
             F::WriteMultipleCoils | F::WriteSingleRegister | F::WriteMultipleRegisters => {
                 let addr = BigEndian::read_u16(&bytes[1..]);
@@ -304,8 +307,9 @@ impl Encode for Response<'_> {
                 buf[1] = (registers.len() * 2) as u8;
                 registers.copy_to(&mut buf[2..]);
             }
-            Self::WriteSingleCoil(address) => {
+            Self::WriteSingleCoil(address, value) => {
                 BigEndian::write_u16(&mut buf[1..], *address);
+                BigEndian::write_u16(&mut buf[3..], bool_to_u16_coil(*value));
             }
             Self::WriteMultipleCoils(address, payload)
             | Self::WriteMultipleRegisters(address, payload)
@@ -385,8 +389,10 @@ const fn min_response_pdu_len(fn_code: FunctionCode) -> usize {
         | F::ReadInputRegisters
         | F::ReadHoldingRegisters
         | F::ReadWriteMultipleRegisters => 2,
-        F::WriteSingleCoil => 3,
-        F::WriteMultipleCoils | F::WriteSingleRegister | F::WriteMultipleRegisters => 5,
+        F::WriteSingleCoil
+        | F::WriteMultipleCoils
+        | F::WriteSingleRegister
+        | F::WriteMultipleRegisters => 5,
         _ => 1,
     }
 }
@@ -444,7 +450,7 @@ mod tests {
         assert_eq!(min_response_pdu_len(ReadCoils), 2);
         assert_eq!(min_response_pdu_len(ReadDiscreteInputs), 2);
         assert_eq!(min_response_pdu_len(ReadInputRegisters), 2);
-        assert_eq!(min_response_pdu_len(WriteSingleCoil), 3);
+        assert_eq!(min_response_pdu_len(WriteSingleCoil), 5);
         assert_eq!(min_response_pdu_len(ReadHoldingRegisters), 2);
         assert_eq!(min_response_pdu_len(WriteSingleRegister), 5);
         assert_eq!(min_response_pdu_len(WriteMultipleCoils), 5);
@@ -806,12 +812,23 @@ mod tests {
 
         #[test]
         fn write_single_coil() {
-            let res = Response::WriteSingleCoil(0x33);
-            let bytes = &mut [0, 0, 0];
+            let res = Response::WriteSingleCoil(0x33, true);
+            let bytes = &mut [0, 0, 0, 0, 0];
             res.encode(bytes).unwrap();
             assert_eq!(bytes[0], 5);
             assert_eq!(bytes[1], 0x00);
             assert_eq!(bytes[2], 0x33);
+            assert_eq!(bytes[3], 0xFF);
+            assert_eq!(bytes[4], 0x00);
+
+            let res = Response::WriteSingleCoil(0x33, false);
+            let bytes = &mut [0, 0, 0, 0, 0];
+            res.encode(bytes).unwrap();
+            assert_eq!(bytes[0], 5);
+            assert_eq!(bytes[1], 0x00);
+            assert_eq!(bytes[2], 0x33);
+            assert_eq!(bytes[3], 0x00);
+            assert_eq!(bytes[4], 0x00);
         }
 
         #[test]
@@ -959,9 +976,13 @@ mod tests {
 
         #[test]
         fn write_single_coil() {
-            let bytes: &[u8] = &[5, 0x00, 0x33];
+            let bytes: &[u8] = &[5, 0x00, 0x33, 0xFF, 0x00];
             let rsp = Response::try_from(bytes).unwrap();
-            assert_eq!(rsp, Response::WriteSingleCoil(0x33));
+            assert_eq!(rsp, Response::WriteSingleCoil(0x33, true));
+
+            let bytes: &[u8] = &[5, 0x00, 0x33, 0x00, 0x00];
+            let rsp = Response::try_from(bytes).unwrap();
+            assert_eq!(rsp, Response::WriteSingleCoil(0x33, false));
 
             let broken_bytes: &[u8] = &[5, 0x00];
             assert!(Response::try_from(broken_bytes).is_err());
