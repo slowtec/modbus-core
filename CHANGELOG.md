@@ -3,6 +3,17 @@
 
 # Changelog
 
+## v0.2.0 (2025-09-30)
+
+- Added TCP client implementation
+- Added `defmt` feature
+- Added `log` feature
+- Added payload slice accessor to `Data`
+- Added `From` and `TryFrom` implementations for `Data`
+- Made `MAX_FRAME_LEN` public
+- Fixed compilation if `rtu` feature is disabled
+- Switched to MSRV 1.85.0 and Edition 2024
+
 ## v0.1.1 (2025-02-23)
 
 - Added Modbus RTU client implementation
