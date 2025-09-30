@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2018-2025 slowtec GmbH <post@slowtec.de>
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use super::*;
+use crate::SlaveId;
 
-/// Slave ID
-pub type SlaveId = u8;
+use super::*;
 
 /// RTU header
 #[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]

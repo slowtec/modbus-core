@@ -3,6 +3,10 @@
 
 # Changelog
 
+## v0.3.0 (unpublished)
+
+- Added `Slave` and `SlaveContext`
+
 ## v0.2.0 (2025-09-30)
 
 - Added TCP client implementation

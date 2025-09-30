@@ -4,6 +4,7 @@
 //! Modbus RTU
 
 use super::*;
+use crate::SlaveId;
 use byteorder::{BigEndian, ByteOrder};
 
 pub mod client;

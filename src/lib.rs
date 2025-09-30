@@ -16,12 +16,17 @@
 #![allow(clippy::similar_names)] // TODO
 #![allow(clippy::wildcard_imports)]
 
+#[cfg(feature = "std")]
+extern crate std;
+
 mod codec;
 mod error;
 mod frame;
+mod slave;
 
 pub use codec::rtu;
 pub use codec::tcp;
 pub use codec::*;
 pub use error::*;
 pub use frame::*;
+pub use slave::*;
