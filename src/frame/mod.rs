@@ -21,6 +21,14 @@ pub struct FrameLocation {
     pub size: usize,
 }
 
+impl FrameLocation {
+    /// One past the last byte of the frame.
+    #[must_use]
+    pub const fn end(&self) -> usize {
+        self.start + self.size
+    }
+}
+
 /// A Modbus function code.
 ///
 /// It is represented by an unsigned 8 bit integer.
@@ -551,5 +559,12 @@ mod tests {
             3
         );
         // TODO: extend test
+    }
+
+    #[test]
+    fn frame_location_end() {
+        assert_eq!(FrameLocation { start: 0, size: 3 }.end(), 3);
+        assert_eq!(FrameLocation { start: 2, size: 3 }.end(), 5);
+        assert_eq!(FrameLocation { start: 2, size: 0 }.end(), 2);
     }
 }
