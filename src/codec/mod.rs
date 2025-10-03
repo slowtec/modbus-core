@@ -110,7 +110,9 @@ impl<'r> TryFrom<&'r [u8]> for Request<'r> {
             ),
             F::WriteMultipleCoils => {
                 let address = BigEndian::read_u16(&bytes[1..3]);
-                let quantity = BigEndian::read_u16(&bytes[3..5]) as usize;
+                let quantity = CoilQuantity {
+                    quantity: BigEndian::read_u16(&bytes[3..5]) as usize,
+                };
                 let byte_count = bytes[5];
                 if bytes.len() < (6 + byte_count as usize) {
                     return Err(Error::ByteCount(byte_count));
@@ -179,7 +181,9 @@ impl<'r> TryFrom<&'r [u8]> for Response<'r> {
                 let data = &bytes[2..byte_count + 2];
                 // Here we have not information about the exact requested quantity
                 // therefore we just assume that the whole byte is meant.
-                let quantity = byte_count * 8;
+                let quantity = CoilQuantity {
+                    quantity: byte_count * 8,
+                };
 
                 match FunctionCode::new(fn_code) {
                     FunctionCode::ReadCoils => Self::ReadCoils(Coils { data, quantity }),
@@ -689,7 +693,7 @@ mod tests {
                 Request::WriteMultipleCoils(
                     0x3311,
                     Coils {
-                        quantity: 4,
+                        quantity: CoilQuantity { quantity: 4 },
                         data: &[0b1101]
                     }
                 )
@@ -936,7 +940,7 @@ mod tests {
             assert_eq!(
                 rsp,
                 Response::ReadCoils(Coils {
-                    quantity: 8,
+                    quantity: CoilQuantity { quantity: 8 },
                     data: &[0b_0000_1001]
                 })
             );
@@ -949,7 +953,7 @@ mod tests {
             assert_eq!(
                 rsp,
                 Response::ReadCoils(Coils {
-                    quantity: 0,
+                    quantity: CoilQuantity { quantity: 0 },
                     data: &[]
                 })
             );
@@ -968,7 +972,7 @@ mod tests {
             assert_eq!(
                 rsp,
                 Response::ReadDiscreteInputs(Coils {
-                    quantity: 8,
+                    quantity: CoilQuantity { quantity: 8 },
                     data: &[0b_0000_1001]
                 })
             );
