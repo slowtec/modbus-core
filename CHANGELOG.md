@@ -7,6 +7,8 @@
 
 - Added `Slave` and `SlaveContext`
 - Merged `modbus_core::rtu::FrameLocation` and `modbus_core::tcp::FrameLocation` and moved it to `modbus_core::FrameLocation`
+- Return a `FrameLocation` in addition to the parsed frame in `rtu::server::decode_response`,
+  `rtu::client::decode_response`, `tcp::server::decode_response` and `tcp::client::decode_request`
 
 ## v0.2.0 (2025-09-30)
 

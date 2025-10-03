@@ -22,7 +22,7 @@ pub fn encode_request(adu: RequestAdu, buf: &mut [u8]) -> Result<usize> {
 }
 
 /// Decode an TCP response.
-pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
+pub fn decode_response(buf: &[u8]) -> Result<Option<(ResponseAdu<'_>, FrameLocation)>> {
     if buf.is_empty() {
         return Ok(None);
     }
@@ -34,7 +34,7 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
                     unit_id,
                     pdu,
                 },
-                _frame_pos,
+                frame_location,
             )) = frame
             else {
                 return Ok(None);
@@ -49,7 +49,7 @@ pub fn decode_response(buf: &[u8]) -> Result<Option<ResponseAdu<'_>>> {
             let response = ExceptionResponse::try_from(pdu)
                 .map(|er| ResponsePdu(Err(er)))
                 .or_else(|_| Response::try_from(pdu).map(|r| ResponsePdu(Ok(r))))
-                .map(|pdu| Some(ResponseAdu { hdr, pdu }));
+                .map(|pdu| Some((ResponseAdu { hdr, pdu }, frame_location)));
             #[cfg(feature = "log")]
             if let Err(error) = response {
                 // Unrecoverable error
@@ -128,13 +128,16 @@ mod tests {
 
         assert!(matches!(
             decode_response(rsp),
-            Ok(Some(ResponseAdu {
-                hdr: Header {
-                    transaction_id: 0x1234,
-                    unit_id: 0x12
+            Ok(Some((
+                ResponseAdu {
+                    hdr: Header {
+                        transaction_id: 0x1234,
+                        unit_id: 0x12
+                    },
+                    pdu: ResponsePdu(Ok(Response::WriteSingleRegister(0x2222, 0xABCD)))
                 },
-                pdu: ResponsePdu(Ok(Response::WriteSingleRegister(0x2222, 0xABCD)))
-            }))
+                FrameLocation { start: 0, size: 12 }
+            )))
         ));
     }
 

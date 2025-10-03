@@ -5,12 +5,12 @@
 use super::*;
 
 /// Decode an TCP request.<'_>
-pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
+pub fn decode_request(buf: &[u8]) -> Result<Option<(RequestAdu<'_>, FrameLocation)>> {
     if buf.is_empty() {
         return Ok(None);
     }
     let frame = decode(DecoderType::Request, buf)?;
-    let Some((decoded_frame, _frame_pos)) = frame else {
+    let Some((decoded_frame, frame_location)) = frame else {
         return Ok(None);
     };
     let DecodedFrame {
@@ -27,7 +27,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
     // have already been verified at the TCP level.
     let request = Request::try_from(pdu)
         .map(RequestPdu)
-        .map(|pdu| Some(RequestAdu { hdr, pdu }));
+        .map(|pdu| Some((RequestAdu { hdr, pdu }, frame_location)));
     #[cfg(feature = "log")]
     if let Err(error) = request {
         // Unrecoverable error
@@ -148,7 +148,9 @@ mod tests {
             0xAB, // value
             0xCD, // value
         ];
-        let adu = decode_request(buf).unwrap().unwrap();
+        let (adu, frame_location) = decode_request(buf).unwrap().unwrap();
+        assert_eq!(frame_location.start, 0);
+        assert_eq!(frame_location.size, 12);
         let RequestAdu { hdr, pdu } = adu;
         let RequestPdu(pdu) = pdu;
         assert_eq!(hdr.transaction_id, 42);
