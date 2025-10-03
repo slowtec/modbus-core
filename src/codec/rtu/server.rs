@@ -5,13 +5,13 @@
 use super::*;
 
 /// Decode an RTU request.
-pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
+pub fn decode_request(buf: &[u8]) -> Result<Option<(RequestAdu<'_>, FrameLocation)>> {
     if buf.is_empty() {
         return Ok(None);
     }
     decode(DecoderType::Request, buf)
         .and_then(|frame| {
-            let Some((DecodedFrame { slave, pdu }, _frame_pos)) = frame else {
+            let Some((DecodedFrame { slave, pdu }, frame_location)) = frame else {
                 return Ok(None);
             };
             let hdr = Header { slave };
@@ -20,7 +20,7 @@ pub fn decode_request(buf: &[u8]) -> Result<Option<RequestAdu<'_>>> {
             // have already been verified with the CRC.
             let request = Request::try_from(pdu)
                 .map(RequestPdu)
-                .map(|pdu| Some(RequestAdu { hdr, pdu }));
+                .map(|pdu| Some((RequestAdu { hdr, pdu }, frame_location)));
 
             #[cfg(feature = "log")]
             if let Err(error) = request {
@@ -84,7 +84,9 @@ mod tests {
             0x9F, // crc
             0xBE, // crc
         ];
-        let adu = decode_request(buf).unwrap().unwrap();
+        let (adu, frame_location) = decode_request(buf).unwrap().unwrap();
+        assert_eq!(frame_location.start, 0);
+        assert_eq!(frame_location.size, 8);
         let RequestAdu { hdr, pdu } = adu;
         let RequestPdu(pdu) = pdu;
         assert_eq!(hdr.slave, 0x12);
