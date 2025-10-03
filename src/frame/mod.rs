@@ -11,6 +11,16 @@ pub(crate) mod tcp;
 pub use self::{coils::*, data::*};
 use byteorder::{BigEndian, ByteOrder};
 
+/// The location of all bytes that belong to the frame.
+#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FrameLocation {
+    /// The index where the frame starts
+    pub start: usize,
+    /// Number of bytes that belong to the frame
+    pub size: usize,
+}
+
 /// A Modbus function code.
 ///
 /// It is represented by an unsigned 8 bit integer.

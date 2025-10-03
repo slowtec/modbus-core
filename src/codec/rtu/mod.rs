@@ -23,16 +23,6 @@ pub struct DecodedFrame<'a> {
     pub pdu: &'a [u8],
 }
 
-/// The location of all bytes that belong to the frame.
-#[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FrameLocation {
-    /// The index where the frame starts
-    pub start: usize,
-    /// Number of bytes that belong to the frame
-    pub size: usize,
-}
-
 /// Decode RTU PDU frames from a buffer.
 pub fn decode(
     decoder_type: DecoderType,
