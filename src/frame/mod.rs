@@ -448,7 +448,7 @@ mod tests {
                 WriteMultipleCoils(
                     0,
                     Coils {
-                        quantity: 0,
+                        quantity: CoilQuantity { quantity: 0 },
                         data: &[],
                     },
                 ),
@@ -493,14 +493,14 @@ mod tests {
         let responses = &[
             (
                 ReadCoils(Coils {
-                    quantity: 0,
+                    quantity: CoilQuantity { quantity: 0 },
                     data: &[],
                 }),
                 1,
             ),
             (
                 ReadDiscreteInputs(Coils {
-                    quantity: 0,
+                    quantity: CoilQuantity { quantity: 0 },
                     data: &[],
                 }),
                 2,
