@@ -113,15 +113,16 @@ pub const fn u16_coil_to_bool(coil: u16) -> Result<bool, Error> {
     }
 }
 
-/// A quantity of coils
+/// A quantity of coils.
 #[cfg_attr(all(feature = "defmt", target_os = "none"), derive(defmt::Format))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CoilQuantity {
-    pub(crate) quantity: usize,
+    /// The number of coils.
+    pub quantity: usize,
 }
 
 impl CoilQuantity {
-    /// Calculate the number of bytes required the number of coils.
+    /// Calculate the number of bytes required for the number of coils.
     #[must_use]
     pub const fn packed_len(&self) -> usize {
         self.quantity.div_ceil(8)
