@@ -147,9 +147,47 @@ pub const fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
     let len = match fn_code {
         0x01..=0x06 => Some(5),
         0x07 | 0x0B | 0x0C | 0x11 => Some(1),
-        0x0F | 0x10 => {
-            if adu_buf.len() > 4 {
-                Some(6 + adu_buf[4] as usize)
+        0x0F => {
+            if adu_buf.len() > 6 {
+                let quantity = u16::from_be_bytes([adu_buf[4], adu_buf[5]]);
+                let bytes = adu_buf[6];
+
+                let expected_count = if quantity % 8 == 0 {
+                    quantity / 8
+                } else {
+                    quantity / 8 + 1
+                };
+
+                if expected_count == bytes as u16 {
+                    Some(6 + bytes as usize)
+                } else {
+                    return Err(Error::QuantityBytesMismatch(
+                        quantity,
+                        bytes,
+                        expected_count,
+                    ));
+                }
+            } else {
+                // incomplete frame
+                None
+            }
+        }
+
+        0x10 => {
+            if adu_buf.len() > 6 {
+                let quantity = u16::from_be_bytes([adu_buf[4], adu_buf[5]]);
+                let expected_count = quantity.saturating_mul(2);
+                let bytes = adu_buf[6];
+
+                if expected_count == adu_buf[6] as u16 {
+                    Some(6 + adu_buf[6] as usize)
+                } else {
+                    return Err(Error::QuantityBytesMismatch(
+                        quantity,
+                        bytes,
+                        expected_count,
+                    ));
+                }
             } else {
                 // incomplete frame
                 None
@@ -251,12 +289,40 @@ mod tests {
         assert_eq!(request_pdu_len(buf).unwrap(), Some(1));
 
         buf[1] = 0x0F;
-        buf[4] = 99;
+        buf[6] = 99;
+        assert_eq!(
+            request_pdu_len(buf),
+            Err(Error::QuantityBytesMismatch(0, 99, 0))
+        );
+
+        buf[1] = 0x10;
+        buf[6] = 99;
+        assert_eq!(
+            request_pdu_len(buf),
+            Err(Error::QuantityBytesMismatch(0, 99, 0))
+        );
+
+        buf[1] = 0x0F;
+        buf[5] = 99;
+        buf[6] = 99;
+        assert_eq!(
+            request_pdu_len(buf),
+            Err(Error::QuantityBytesMismatch(99, 99, 13))
+        );
+
+        buf[1] = 0x0F;
+        buf[4] = 0x03;
+        buf[5] = 0x14;
+        buf[6] = 99;
         assert_eq!(request_pdu_len(buf).unwrap(), Some(105));
 
         buf[1] = 0x10;
-        buf[4] = 99;
-        assert_eq!(request_pdu_len(buf).unwrap(), Some(105));
+        buf[4] = 0;
+        buf[5] = 49;
+        buf[6] = 98;
+        assert_eq!(request_pdu_len(buf).unwrap(), Some(104));
+        buf[4] = 0x00;
+        buf[5] = 0x00;
 
         buf[1] = 0x11;
         assert_eq!(request_pdu_len(buf).unwrap(), Some(1));
