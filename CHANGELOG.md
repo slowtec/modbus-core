@@ -14,6 +14,7 @@
 - Add `Coils::from_iter`
 - Removed `modbus_core::packed_coils_len`, it is now implemented via `CoilQuantity::packed_len`.
 - `modbus_core::pack_coils` now takes an iterator over coils instead of a slice of coils, and it returns a `CoilQuantity` instead of a `usize`.
+- Fixed `Request::pdu_len` for `Request::WriteMultipleRegisters` and `Request::ReadWriteMultipleRegisters`
 
 ## v0.2.0 (2025-09-30)
 
