@@ -387,8 +387,8 @@ impl Request<'_> {
             | Self::WriteSingleRegister(_, _)
             | Self::WriteSingleCoil(_, _) => 5,
             Self::WriteMultipleCoils(_, coils) => 6 + coils.packed_len(),
-            Self::WriteMultipleRegisters(_, words) => 6 + words.data.len(),
-            Self::ReadWriteMultipleRegisters(_, _, _, words) => 10 + words.data.len(),
+            Self::WriteMultipleRegisters(_, data) => 6 + data.len() * 2,
+            Self::ReadWriteMultipleRegisters(_, _, _, data) => 10 + data.len() * 2,
             Self::Custom(_, data) => 1 + data.len(),
             #[cfg(feature = "rtu")]
             _ => todo!(), // TODO
@@ -406,9 +406,9 @@ impl Response<'_> {
             Self::WriteMultipleCoils(_, _)
             | Self::WriteMultipleRegisters(_, _)
             | Self::WriteSingleRegister(_, _) => 5,
-            Self::ReadInputRegisters(words)
-            | Self::ReadHoldingRegisters(words)
-            | Self::ReadWriteMultipleRegisters(words) => 2 + words.len() * 2,
+            Self::ReadInputRegisters(data)
+            | Self::ReadHoldingRegisters(data)
+            | Self::ReadWriteMultipleRegisters(data) => 2 + data.len() * 2,
             Self::Custom(_, data) => 1 + data.len(),
             #[cfg(feature = "rtu")]
             Self::ReadExceptionStatus(_) => 2,
@@ -547,6 +547,25 @@ mod tests {
             Request::WriteMultipleCoils(0, Coils::from_bools(&[true, false], buf).unwrap())
                 .pdu_len(),
             7
+        );
+        let mut big_buffer = [0; 200];
+        assert_eq!(
+            Request::WriteMultipleRegisters(
+                0,
+                Data::from_words(&[0x23, 0x24], &mut big_buffer).unwrap()
+            )
+            .pdu_len(),
+            10
+        );
+        assert_eq!(
+            Request::ReadWriteMultipleRegisters(
+                0,
+                3,
+                2,
+                Data::from_words(&[0x23, 0x24], &mut big_buffer).unwrap()
+            )
+            .pdu_len(),
+            14
         );
         // TODO: extend test
     }
