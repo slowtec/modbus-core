@@ -25,7 +25,11 @@ pub enum Error {
     /// Protocol not Modbus
     ProtocolNotModbus(u16),
     /// Length Mismatch
-    QuantityBytesMismatch(u16, u8, u16),
+    QuantityBytesMismatch {
+        quantity: u16,
+        bytes_expected: u16,
+        bytes: u8,
+    },
 }
 
 impl fmt::Display for Error {
@@ -50,7 +54,11 @@ impl fmt::Display for Error {
             Self::ProtocolNotModbus(protocol_id) => {
                 write!(f, "Protocol not Modbus(0), received {protocol_id} instead")
             }
-            Self::QuantityBytesMismatch(quantity, bytes, bytes_expected) => write!(
+            Self::QuantityBytesMismatch {
+                quantity,
+                bytes,
+                bytes_expected,
+            } => write!(
                 f,
                 "Quantity Byte Mismatch: quantity: {quantity}, bytes : {bytes}, bytes expected {bytes_expected}"
             ),
@@ -91,7 +99,11 @@ impl defmt::Format for Error {
                     protocol_id
                 )
             }
-            Self::QuantityBytesMismatch(quantity, bytes, bytes_expected) => defmt::write!(
+            Self::QuantityBytesMismatch {
+                quantity,
+                bytes,
+                bytes_expected,
+            } => defmt::write!(
                 f,
                 "Quantity Byte Mismatch: quantity: {}, bytes: {}, bytes expected: {}",
                 quantity,

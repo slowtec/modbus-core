@@ -152,20 +152,20 @@ pub const fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
                 let quantity = u16::from_be_bytes([adu_buf[4], adu_buf[5]]);
                 let bytes = adu_buf[6];
 
-                let expected_count = if quantity % 8 == 0 {
+                let bytes_expected = if quantity % 8 == 0 {
                     quantity / 8
                 } else {
                     quantity / 8 + 1
                 };
 
-                if expected_count == bytes as u16 {
+                if bytes_expected == bytes as u16 {
                     Some(6 + bytes as usize)
                 } else {
-                    return Err(Error::QuantityBytesMismatch(
+                    return Err(Error::QuantityBytesMismatch {
                         quantity,
                         bytes,
-                        expected_count,
-                    ));
+                        bytes_expected,
+                    });
                 }
             } else {
                 // incomplete frame
@@ -176,17 +176,17 @@ pub const fn request_pdu_len(adu_buf: &[u8]) -> Result<Option<usize>> {
         0x10 => {
             if adu_buf.len() > 6 {
                 let quantity = u16::from_be_bytes([adu_buf[4], adu_buf[5]]);
-                let expected_count = quantity.saturating_mul(2);
+                let bytes_expected = quantity.saturating_mul(2);
                 let bytes = adu_buf[6];
 
-                if expected_count == adu_buf[6] as u16 {
+                if bytes_expected == adu_buf[6] as u16 {
                     Some(6 + adu_buf[6] as usize)
                 } else {
-                    return Err(Error::QuantityBytesMismatch(
+                    return Err(Error::QuantityBytesMismatch {
                         quantity,
                         bytes,
-                        expected_count,
-                    ));
+                        bytes_expected,
+                    });
                 }
             } else {
                 // incomplete frame
@@ -292,14 +292,22 @@ mod tests {
         buf[6] = 99;
         assert_eq!(
             request_pdu_len(buf),
-            Err(Error::QuantityBytesMismatch(0, 99, 0))
+            Err(Error::QuantityBytesMismatch {
+                quantity: 0,
+                bytes: 99,
+                bytes_expected: 0
+            })
         );
 
         buf[1] = 0x10;
         buf[6] = 99;
         assert_eq!(
             request_pdu_len(buf),
-            Err(Error::QuantityBytesMismatch(0, 99, 0))
+            Err(Error::QuantityBytesMismatch {
+                quantity: 0,
+                bytes: 99,
+                bytes_expected: 0
+            })
         );
 
         buf[1] = 0x0F;
@@ -307,7 +315,11 @@ mod tests {
         buf[6] = 99;
         assert_eq!(
             request_pdu_len(buf),
-            Err(Error::QuantityBytesMismatch(99, 99, 13))
+            Err(Error::QuantityBytesMismatch {
+                quantity: 99,
+                bytes: 99,
+                bytes_expected: 13
+            })
         );
 
         buf[1] = 0x0F;
